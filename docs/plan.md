@@ -21,8 +21,9 @@ la version du dépôt est 0.10.0.
 hors dépôt) propose de faire d'OpenTuneBox un outil **multi-firmware** — Betaflight, INAV, ArduCopter — par un
 **script par firmware et par plage de versions** : le script *décrit* la chaîne de filtres et de PID sous forme de
 données et *fournit* les briques de calcul avec l'arithmétique exacte de sa famille, le cœur assemble et exécute.
-Elle est reprise ici en lots **22 à 25**. **Les quatre arbitrages du lot 22 sont rendus le 2026-11-18** : la chaîne
-est décrite en **données** avec des briques compilées en Rust (pas de moteur de script) ; le **banc de référence vit
+Elle est reprise ici en lots **22 à 25**, dont le **22 est fait** (D-057, 2026-11-18) : il a consigné les quatre
+arbitrages de Cédric, le contrat des sept fonctions et les plages de versions
+([spec-betaflight.md](spec-betaflight.md) §8). La chaîne y est décrite en **données** avec des briques compilées en Rust (pas de moteur de script) ; le **banc de référence vit
 dans le dépôt** et ne copie aucun fichier de firmware ; la nouvelle chaîne de calcul **remplace l'ancienne d'un
 coup** au lot 24 ; et le périmètre reste **Betaflight seul**, ce qui a fait sortir du plan INAV (lot 26, W-001 reste
 fermé) et ArduCopter (lot 27, désormais W-057). Trois des sept questions ouvertes de l'étude avaient déjà leur
@@ -59,7 +60,7 @@ reste qu'une seule dépendance nouvelle à introduire, pour l'USB (lot 32).
 - Modèle conseillé par lot : **Sonnet** pour le mécanique, la documentation, les tests ; **Opus** pour le
   décodeur, la mémoire et le débogage difficile.
 - La numérotation des lots est une **série unique**, jamais réutilisée : les lots 0 à 14 et 16 à 21
-  sont au tableau en bas (faits, non retenus ou supprimés), les lots 22 à 25 et 28 à 32 sont ouverts
+  sont au tableau en bas (faits, non retenus ou supprimés), les lots 23 à 25 et 28 à 32 sont ouverts
   ci-dessous, les lots 26 et 27 sont sortis du plan le 2026-11-18, et le prochain numéro libre est **33**.
 
 ## Ordre des étapes
@@ -67,15 +68,14 @@ reste qu'une seule dépendance nouvelle à introduire, pour l'USB (lot 32).
 | # | Lot | Sujet | Dépend de |
 |---|---|---|---|
 | 1 | **15** | Dette de l'interface (W-052, pages spectrales) — **conditionnel** | le volet « cache » est soldé (L-094, D-053) ; le reste attend un déclencheur mesuré |
-| 2 | **22** | Cadre des scripts firmware : les quatre arbitrages écrits en décision, aucune ligne de code | rien ; **bloque 23 à 25** |
-| 3 | **23** | Chaîne Betaflight décrite en données, à résultat identique | lot 22 (la décision écrite) |
-| 4 | **24** | Briques à l'arithmétique du firmware, vecteurs de référence **et bascule** | lot 23 |
-| 5 | **25** | Plages de versions et veille des changements du firmware | lot 24 |
-| 6 | **28** | Bibliothèque de données : logs copiés, fragments, mesures (fichiers JSON) | rien ; **socle des lots 29 à 32** |
-| 7 | **29** | Fragments : écran d'extraction, index, liste d'analyse | lot 28 |
-| 8 | **30** | Refonte de la navigation et de la mise en page (les neuf maquettes) | lot 29, et le lot 23 pour l'espace « Bruit et filtres » |
-| 9 | **31** | Mesures suivies dans le temps et fiche cible par drone | lots 28 et 29 |
-| 10 | **32** | Récupération des logs par USB (MSP / MSC) — le plus risqué | lots 28 et 30 |
+| 2 | **23** | Chaîne Betaflight décrite en données, à résultat identique | D-057 |
+| 3 | **24** | Briques à l'arithmétique du firmware, vecteurs de référence **et bascule** | lot 23 |
+| 4 | **25** | Plages de versions et veille des changements du firmware | lot 24 |
+| 5 | **28** | Bibliothèque de données : logs copiés, fragments, mesures (fichiers JSON) | rien ; **socle des lots 29 à 32** |
+| 6 | **29** | Fragments : écran d'extraction, index, liste d'analyse | lot 28 |
+| 7 | **30** | Refonte de la navigation et de la mise en page (les neuf maquettes) | lot 29, et le lot 23 pour l'espace « Bruit et filtres » |
+| 8 | **31** | Mesures suivies dans le temps et fiche cible par drone | lots 28 et 29 |
+| 9 | **32** | Récupération des logs par USB (MSP / MSC) — le plus risqué | lots 28 et 30 |
 
 Il ne reste que du **confort**, mesuré comme tel : le budget de 60 images par seconde est tenu avec une marge
 de 3 sur la plus longue session du corpus. Les lots qui touchaient à un utilisateur réel ont été réglés le
@@ -138,73 +138,13 @@ quatrième : elle a été mesurée le 2026-11-10, et le cache est borné depuis 
 
 ---
 
-## Lot 22 : cadre des scripts firmware (Opus) — **arbitrages rendus, à écrire**
-
-**But** : écrire noir sur blanc ce qui décide de la forme de tout le reste. L'étude du 2026-11-17 posait sept
-questions ouvertes : trois avaient déjà leur réponse dans les registres, et **les quatre autres ont été
-tranchées par Cédric le 2026-11-18** (ci-dessous). Ce lot ne décide plus rien : il consigne, et ajoute à la
-spécification ce que les lots suivants devront respecter. **Aucune ligne de code.**
-
-**Branche** : « docs/firmware-scripts-frame ».
-
-**À lire** : [decisions.md](decisions.md) D-045 (licence), D-004 et D-005 (rien n'est copié), D-003 (hors ligne),
-D-033 (noyaux de calcul), D-047 (tolérance des références figées), D-011 (origine des seuils) ;
-[travaux-reportes.md](travaux-reportes.md) W-001 (INAV hors périmètre), W-002 (trop peu de drones), W-028
-(réenregistrement des références) ; [lecons.md](lecons.md) L-048 ; [spec-betaflight.md](spec-betaflight.md) §3.
-
-**Déjà tranché par les registres** — à rappeler dans la décision, pas à rediscuter :
-
-- **Licence.** Betaflight, INAV et ArduPilot sont sous **GPL 3**. D-045 refuse **toute dépendance à copyleft**
-  (« un refus, plus une discussion ») et D-004 interdit la copie de code. Donc : aucun fichier de firmware dans
-  le dépôt, et **rien de compilé depuis leur code dans ce qui est livré** — l'option de l'étude « compiler
-  directement le code du firmware » est **écartée**. Les briques restent réimplémentées d'après la lecture du
-  code, comme aujourd'hui.
-- **Hors ligne.** D-003 : un script ne va rien chercher sur le réseau à l'exécution.
-- **Ordre de travail.** Betaflight d'abord, comme le propose l'étude : c'est le seul firmware du corpus, et sa
-  chaîne est déjà codée.
-
-**Les quatre arbitrages** :
-
-- [x] **1. Forme du script — tranché par Cédric le 2026-11-18** : la chaîne est décrite dans un **fichier de
-      données versionné** dans le dépôt, et les **briques sont du Rust compilé** dans le programme, choisies
-      d'après la version du log. Pas de moteur de script : il n'achèterait qu'un rechargement à chaud, au prix de
-      la vitesse sur des millions d'échantillons, d'une surface de chargement de code exécutable (D-054) et d'une
-      dépendance ; et le WASM perd son seul vrai argument, puisque compiler le code du firmware est exclu par
-      D-045. **Conséquence assumée** : ajouter un firmware demande de recompiler et de publier une version.
-- [x] **2. Banc de référence — tranché par Cédric le 2026-11-18** : le banc vit **dans le dépôt**, sous la forme
-      d'un script **écrit par le projet** qui télécharge le firmware au moment de s'exécuter, le compile sur le
-      poste, et ne verse dans le dépôt que des **vecteurs de nombres**. Aucun fichier de firmware n'est copié ni
-      redistribué : D-045 est tenue, et la preuve reste refaisable par n'importe qui, y compris par la CI. ⚠️ Un
-      fichier du firmware qui finirait versionné, même « pour aller plus vite », casse cet arbitrage.
-- [x] **3. Cohabitation — tranché par Cédric le 2026-11-18 : bascule d'un coup**, dans le lot 24.
-      `rust/otb-analysis/src/bf_filters.rs` est tout en `f64`, porté de Python et validé à **tolérance mesurée**
-      (L-048, D-047) ; la nouvelle chaîne change tous les spectres « et si », donc les références figées
-      (réenregistrement, W-028) et les seuils de l'assistant calibrés sur le corpus (D-011). Cédric a écarté la
-      cohabitation « deux chaînes un temps » et choisi de tout faire dans un seul lot, le risque nommé — un seuil
-      qui change l'avis de l'assistant sur un vrai log — étant accepté. Il est donc **borné par l'ordre des étapes
-      du lot 24** et par son critère d'arrêt.
-- [x] **4. Périmètre — tranché par Cédric le 2026-11-18 : Betaflight seul.** **W-001 reste fermé** (INAV et KISS
-      hors périmètre) et les lots 26 (INAV) et 27 (ArduCopter) **sortent du plan**, chacun avec sa condition de
-      reprise écrite : des vrais logs. Raison : le corpus n'en contient aucun, et la méthode du projet exige une
-      validation sur de vrais logs — W-002 dit déjà ce que coûte un profil appuyé sur trop peu de drones. Le
-      travail des lots 23 à 25 garde tout son sens pour Betaflight seul, dont l'arithmétique change déjà d'une
-      version à l'autre. ArduCopter est consigné en **W-057**.
-
-- [ ] **Livrables** : une décision dans [decisions.md](decisions.md) qui porte les quatre arbitrages ; le contrat
-      des sept fonctions et la description de chaîne ajoutés à [spec-betaflight.md](spec-betaflight.md) (formules
-      lues dans le code, source citée à la ligne) ; **W-057 est déjà écrit** pour ArduCopter.
-- [ ] **Critère d'arrêt** : les quatre arbitrages sont rendus (2026-11-18). Ce lot ne fait plus que les écrire ;
-      s'il révèle qu'un arbitrage ne tient pas à l'écriture, s'arrêter et le dire plutôt que de l'arranger.
-
----
-
 ## Lot 23 : la chaîne Betaflight décrite en données (Opus)
 
 **But** : sortir du code l'**ordre** de la chaîne et le mettre dans une description de données, **sans changer un
 seul résultat**. C'est le lot qui rend les autres firmwares possibles, et le seul qui se prouve entièrement sur le
 corpus d'aujourd'hui.
 
-**Branche** : `refactor/chain-as-data`. **Dépend du lot 22** (arbitrages 1 et 3).
+**Branche** : `refactor/chain-as-data`. **Suit D-057** (lot 22, fait le 2026-11-18).
 
 **À lire** : `rust/otb-analysis/src/bf_filters.rs:simulate_gyro` et
 `rust/otb-analysis/src/bf_filters.rs:simulate_dterm`, [spec-betaflight.md](spec-betaflight.md) §3,
@@ -238,7 +178,7 @@ corpus d'aujourd'hui.
 ## Lot 24 : briques à l'arithmétique du firmware (Opus)
 
 **But** : atteindre le bit à bit contre le firmware compilé sur PC, **et basculer l'application sur cette nouvelle
-chaîne dans le même lot** (arbitrage 3, tranché le 2026-11-18). C'est le plus gros lot du plan : il déplace un
+chaîne dans le même lot** (D-057). C'est le plus gros lot du plan : il déplace un
 chiffre dans presque tous les écrans.
 
 **Branche** : `feat/firmware-exact-bricks`. **Dépend du lot 23.**
@@ -530,6 +470,7 @@ prouvés.**
 | 20 | 2026-11-11 | **Notes de version à la manière de Betaflight** (PR #147, D-056) : titre de PR en phrase et une étiquette `RN: …` (8 étiquettes créées, dont `dependencies`, absente jusque-là : L-096) ; `.github/release.yml` ; contrôle `etiquette-pr.yml` (rouge sans étiquette, vert avec, vu sur #147) ; `otb-dev release notes` traduit la liste de GitHub ; `CHANGELOG.md` supprimé. 86 PR étiquetées et retitrées, Dependabot excepté (#60 à #147). Page de la 0.9.0 refaite (50 Ko → 6 Ko) depuis une liste fabriquée en local, GitHub ne lisant `release.yml` que sur l'étiquette (L-097) | `etiquette` exigé par `protection-main` depuis le 2026-11-12 ; l'appel de `generate-notes` par le jeton de la CI sera éprouvé à la première étiquette `essai-v…` ou `v…` |
 | 21 | 2026-11-12 | **Licences livrées et sources sans nom** (branche « docs/licenses-and-sources-review », D-050 précisée) : textes des 22 composants sans fichier de licence copiés de leur dépôt d'origine (`rust/otb-dev/upstream-licenses/`, table `UPSTREAM`), dont la licence BSD du code d'AccessKit issu de Chromium, **absente du fichier livré avec la 0.9.0** ; polices relues (Noto Emoji, seule police OFL, non compilée) ; partie 3 du fichier vide et refusée par un test, contre-preuve vue en échec. Noms de personnes retirés de 13 sources (5 relevées, 8 trouvées en relisant), pseudonymes compris | W-043 et W-055 clos ; reste, avant la 0.10.0 : rien de ce lot |
 
+| 22 | 2026-11-18 | **Cadre des scripts firmware** (branche « docs/firmware-scripts-frame », **D-057**) : les quatre arbitrages de Cédric écrits en décision, le contrat des sept fonctions, la description de chaîne et les plages de versions ajoutés à [spec-betaflight.md](spec-betaflight.md) §8, résumé dans `AGENTS.md`. **Aucun code livré** | trois constats du code relevés au passage (ordre de chaîne en dur, une seule cadence, ordre du terme D) : le lot 23 doit les chiffrer |
 | 26 | — | **Sorti du plan le 2026-11-18** : INAV. Périmètre tranché par Cédric — Betaflight seul tant qu'il n'y a pas de vrais logs INAV. Rien n'était commencé | W-001 reste fermé, avec sa condition de reprise |
 | 27 | — | **Sorti du plan le 2026-11-18** : ArduCopter, même arbitrage. Son coût propre (lecteur DataFlash, alignement temporel) et son intérêt unique (seul firmware qui logge l'entrée des filtres à pleine cadence) sont consignés | **W-057 ouvert**, condition de reprise écrite |
 
