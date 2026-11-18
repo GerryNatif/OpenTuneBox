@@ -2804,6 +2804,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "otb-store"
+version = "0.10.0"
+dependencies = [
+ "serde_json",
+]
+
+[[package]]
 name = "owned_ttf_parser"
 version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"

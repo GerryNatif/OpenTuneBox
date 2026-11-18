@@ -1,0 +1,13 @@
+[package]
+name = "otb-store"
+description = "Bibliothèque de données : drones, logs copiés, fragments, historique des réglages, mesures suivies (lot 28) ; fichiers JSON, aucune base, aucune dépendance nouvelle"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+serde_json = { version = "1", features = ["preserve_order"] }
+
+[lints]
+workspace = true

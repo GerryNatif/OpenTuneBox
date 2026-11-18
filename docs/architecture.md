@@ -151,6 +151,15 @@ Espace de travail Cargo (D-031), `rust/`. Une entrée par crate. Les fichiers de
   courbes (`minmax.rs` : `MinMaxPyramid`, index multi-résolution par courbe, `window_points` en O(points rendus) ; D-048) ;
   dépendances realfft et rayon (D-033).
 - **otb-format** : formats de nombres (`{:.2f}`, `%g`, `repr`, `round`, D-035), pour que les textes restent identiques à ceux de l'ancienne version.
+- **otb-store** : la bibliothèque de données (lot 28), en **fichiers JSON** et non en base — tranché par Cédric le 2026-11-18,
+  le volume étant petit et une base embarquée apportant un compilateur C et une frontière FFI (D-054). Six tables dans
+  `<données>/OpenTuneBox/OpenTuneBox/bibliotheque/` : drones (clé = identifiant de la carte), logs connus (copiés ou laissés
+  en place), fragments de vol, configurations (`diff all` datés, gardés seulement quand ils changent), mesures (une par
+  fragment, axe et grandeur, avec l'empreinte des réglages et la **version de calcul** qui les périme) et liste d'analyse.
+  `model.rs` : les tables et leur écriture JSON, conversion à la main et lecture tolérante. **Un seul module d'accès** : le
+  reste du programme ne voit jamais un fichier, ce qui limitera à ce fichier le passage à une vraie base le jour où le
+  déclencheur du plan sera atteint. Un fichier illisible ou d'une version plus récente est **mis de côté**, jamais écrasé
+  (même règle que les fiches drone, D-039). Mesures de volume dans [validation](validation.md). Dépendance : serde_json.
 - **otb-analysis** : voir « Modules d'analyse » ; dépend d'otb-dsp et de rayon (L-041, L-042).
 - **otb-advisor** : l'assistant. `profiles.rs` (profils de taille et seuils), `rules.rs` (constats), `noise.rs`, `step_tuning.rs`,
   `drone_card.rs`, `log_check.rs`, `tuning_path.rs` (voir « Flux de données ») ; `pyclasses.rs` : tables de caractères (`\d`, `\w`) qui
