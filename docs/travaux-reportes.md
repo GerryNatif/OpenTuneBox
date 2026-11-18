@@ -60,6 +60,7 @@ Règles d'écriture :
 
 | ID | Sujet | Statut |
 |---|---|---|
+| W-058 | Simulation temporelle des filtres : une seule cadence et terme D dérivé avant filtrage | ouvert (limite assumée, invisible dans l'application) |
 | W-057 | ArduCopter (logs DataFlash `.bin`) non pris en charge | ouvert (périmètre Betaflight seul, 2026-11-18) |
 | W-026 | Rust / Python : zéros signés de `np.max` / `np.min`, et entrées jamais fournies par l'application (`fs` NaN dans `xcorr`…) | 🚫 SANS SUITE (2026-11-08) — plus de Python à égaler, aucun appelant ; écarts gardés en commentaire du code |
 | W-027 | Rust / Python : `margins` avec un masque d'un élément, `estimate` sur une grille de fréquences à pas nul (entrées jamais construites par l'application) | 🚫 SANS SUITE (2026-11-08) — mêmes raisons que W-026 |
@@ -862,3 +863,22 @@ compositeur. Seul le banc de W-049 est relançable aujourd'hui (`banc_cadre`).
   **Piste** : un lecteur DataFlash à côté du lecteur Blackbox, rendant la même `DecodedSession`, et l'alignement
   temporel dans le cœur, avant toute analyse.
   [`rust/otb-decoder/src/file.rs:DecodedSession`]
+
+- **W-058** — **La simulation temporelle des filtres ne suit ni les cadences du firmware ni son ordre du terme D.**
+  `rust/otb-analysis/src/bf_filters.rs:simulate_gyro` fait tourner toute la chaîne à la **cadence du log**, alors que
+  le firmware filtre le LPF2 à la cadence gyro et le reste à la cadence PID ; et
+  `rust/otb-analysis/src/bf_filters.rs:simulate_dterm` **dérive puis filtre**, quand le firmware filtre `gyroADCf`
+  puis dérive. Vérifié le 2026-11-18.
+  **Pourquoi reporté** : ces deux fonctions ne sont appelées que par les tests et par `otb-parity`. Ce que
+  l'application affiche passe par `rust/otb-analysis/src/bf_filters.rs:whatif_spectrum`, qui multiplie le spectre
+  enregistré par un **rapport de réponses** calculé depuis `rust/otb-analysis/src/bf_filters.rs:gyro_chain` — lequel
+  porte bien les deux cadences, et où l'ordre des filtres ne change rien (un produit commute). **Aucun pilote ne voit
+  donc ces deux écarts.** Les corriger changerait les références figées sans rien changer à l'écran.
+  **Risque si on n'y touche pas** : un agent suivant peut croire la simulation temporelle fidèle au firmware et s'en
+  servir comme référence ; et la cadence unique restera fausse le jour où cette fonction servira à afficher une
+  courbe temporelle.
+  **Reprise** : quand la simulation temporelle alimente un écran (trait « gyro simulé » dans le temps), ou au lot 24,
+  qui réenregistre de toute façon les références et impose le bit à bit contre le firmware.
+  **Piste** : la description unique du lot 23, dont la simulation temporelle se déduit avec la cadence de chaque
+  étape ; l'ordre du terme D vient alors de la position de la dérivation (D-057, `derivation`).
+  [`rust/otb-analysis/src/bf_filters.rs:simulate_gyro`]

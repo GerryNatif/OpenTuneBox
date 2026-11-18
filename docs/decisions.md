@@ -171,13 +171,18 @@ autres le 2026-11-18, une par une.
   compilé sur PC* est le critère de test de chaque script ; *identité au vol réel* est **mesurée et affichée,
   jamais promise**, car le log ne contient pas toujours l'entrée des filtres à pleine cadence.
 
-**Témoins.** État du code lu le 2026-11-18 : `rust/otb-analysis/src/bf_filters.rs` est entièrement en `f64` (port
-de Python, tolérance mesurée, L-048) ; `rust/otb-analysis/src/bf_filters.rs:simulate_gyro` porte l'ordre de la
-chaîne **en dur** et fait tourner toute la chaîne à la cadence du log, là où le firmware filtre le LPF2 à la
-cadence gyro et le reste à la cadence PID ([spec-betaflight.md](spec-betaflight.md) §3) ;
-`rust/otb-analysis/src/bf_filters.rs:simulate_dterm` **dérive puis filtre**, quand le firmware filtre `gyroADCf`
-puis dérive — les deux ordres ne commutent plus dès qu'un filtre D varie, et le lot 23 doit le chiffrer. Refus du
-copyleft : liste `allow` de `rust/deny.toml`, onze licences, aucune copyleft. **Non vérifié à la source** : la
+**Témoins.** État du code lu le 2026-11-18, **puis corrigé le même jour** après vérification du chemin que
+l'application emprunte réellement. `rust/otb-analysis/src/bf_filters.rs` est entièrement en `f64` (port de Python,
+tolérance mesurée, L-048). L'ordre de la chaîne y existe **deux fois** :
+`rust/otb-analysis/src/bf_filters.rs:gyro_chain` le porte avec ses **deux cadences** (LPF2 à la cadence gyro, le
+reste à la cadence PID, [spec-betaflight.md](spec-betaflight.md) §3) et c'est **celui que l'application utilise**,
+par `rust/otb-analysis/src/bf_filters.rs:whatif_spectrum` ;
+`rust/otb-analysis/src/bf_filters.rs:simulate_gyro` le porte une seconde fois, **en dur et à la seule cadence du
+log**, et n'est appelé que par les tests et par `otb-parity`. Même chose pour le terme D :
+`rust/otb-analysis/src/bf_filters.rs:simulate_dterm` dérive puis filtre quand le firmware filtre puis dérive, mais
+l'application passe par un **rapport de réponses**, où l'ordre des filtres ne change rien. C'est donc une
+**duplication, pas un défaut visible** (W-058) : ce que le lot 23 doit supprimer, c'est la seconde description.
+Refus du copyleft : liste `allow` de `rust/deny.toml`, onze licences, aucune copyleft. **Non vérifié à la source** : la
 licence GPL 3 des trois firmwares est lue dans l'étude, pas dans leurs dépôts ; à confirmer au lot qui monte le
 banc (lot 24).
 

@@ -140,24 +140,28 @@ quatrième : elle a été mesurée le 2026-11-10, et le cache est borné depuis 
 
 ## Lot 23 : la chaîne Betaflight décrite en données (Opus)
 
-**But** : sortir du code l'**ordre** de la chaîne et le mettre dans une description de données, **sans changer un
-seul résultat**. C'est le lot qui rend les autres firmwares possibles, et le seul qui se prouve entièrement sur le
-corpus d'aujourd'hui.
+**But** : **n'avoir plus qu'une seule description** de la chaîne de filtres, au lieu de deux, **sans changer un
+seul résultat**. C'est ce qui rend un script de firmware possible : D-057 veut une chaîne décrite une fois, pas
+deux fois en dur.
 
 **Branche** : `refactor/chain-as-data`. **Suit D-057** (lot 22, fait le 2026-11-18).
 
-**À lire** : `rust/otb-analysis/src/bf_filters.rs:simulate_gyro` et
-`rust/otb-analysis/src/bf_filters.rs:simulate_dterm`, [spec-betaflight.md](spec-betaflight.md) §3,
-`rust/otb-gui/src/tools/filter_sim.rs`, [lecons.md](lecons.md) L-048 et L-071.
+**À lire** : `rust/otb-analysis/src/bf_filters.rs:gyro_chain`,
+`rust/otb-analysis/src/bf_filters.rs:simulate_gyro`, `rust/otb-analysis/src/bf_filters.rs:whatif_spectrum`,
+[spec-betaflight.md](spec-betaflight.md) §3 et §8, [lecons.md](lecons.md) L-048 et L-071.
 
-**Constats du dépôt** (relevés le 2026-11-18, à vérifier avant d'écrire) :
+**Constats du dépôt, vérifiés le 2026-11-18** (une première lecture avait conclu trop vite à deux défauts
+visibles ; la vérification du chemin réellement emprunté par l'application dit autre chose) :
 
-- L'ordre est **en dur** dans `simulate_gyro` : LPF2 → notchs RPM → notchs statiques → LPF1 → notchs dynamiques.
-- Toute la chaîne tourne à la **cadence du log**, alors que le firmware filtre le LPF2 à la cadence **gyro** et le
-  reste à la cadence **PID** (§3). Les deux domaines de cadence de l'étude ne sont donc pas représentés.
-- `simulate_dterm` **dérive d'abord, puis filtre** ; le firmware **filtre `gyroADCf`, puis dérive** (§3). À filtres
-  fixes, une dérivée et un filtre linéaire commutent ; dès que le passe-bas D est **dynamique** (gaz) ou le notch
-  **variable**, ils ne commutent plus. ⚠️ Défaut candidat, pas un remaniement : à mesurer avant toute réécriture.
+- **L'ordre de la chaîne est écrit deux fois.** `gyro_chain` le porte avec ses **deux cadences** (LPF2 à la cadence
+  gyro, le reste à la cadence PID) et c'est **ce que l'application utilise**, par `whatif_spectrum` : spectre
+  enregistré × rapport des réponses, fenêtre par fenêtre. `simulate_gyro` le porte une **seconde fois**, en dur et
+  à la seule cadence du log ; il n'est appelé que par les tests et par `otb-parity`. Même chose pour le terme D.
+- **Les deux écarts du chemin temporel ne sont donc pas visibles par un pilote** : la cadence unique et l'ordre
+  « dériver puis filtrer » de `simulate_dterm` ne touchent que les tests et la parité, et dans un rapport de
+  réponses l'ordre des filtres ne change rien (W-058 porte cette limite et sa condition de reprise).
+- Reste le vrai travail : **une seule description**, dont la réponse en fréquence et la simulation temporelle se
+  déduisent toutes les deux. Un script de firmware ne décrira sa chaîne qu'une fois.
 
 - [ ] **Description de la chaîne en données** : étapes ordonnées (brique, cadence, paramètres, en service ou non),
       **prises** (où le log a enregistré chaque signal — c'est ce qui décide du badge « simulé » de
@@ -470,7 +474,7 @@ prouvés.**
 | 20 | 2026-11-11 | **Notes de version à la manière de Betaflight** (PR #147, D-056) : titre de PR en phrase et une étiquette `RN: …` (8 étiquettes créées, dont `dependencies`, absente jusque-là : L-096) ; `.github/release.yml` ; contrôle `etiquette-pr.yml` (rouge sans étiquette, vert avec, vu sur #147) ; `otb-dev release notes` traduit la liste de GitHub ; `CHANGELOG.md` supprimé. 86 PR étiquetées et retitrées, Dependabot excepté (#60 à #147). Page de la 0.9.0 refaite (50 Ko → 6 Ko) depuis une liste fabriquée en local, GitHub ne lisant `release.yml` que sur l'étiquette (L-097) | `etiquette` exigé par `protection-main` depuis le 2026-11-12 ; l'appel de `generate-notes` par le jeton de la CI sera éprouvé à la première étiquette `essai-v…` ou `v…` |
 | 21 | 2026-11-12 | **Licences livrées et sources sans nom** (branche « docs/licenses-and-sources-review », D-050 précisée) : textes des 22 composants sans fichier de licence copiés de leur dépôt d'origine (`rust/otb-dev/upstream-licenses/`, table `UPSTREAM`), dont la licence BSD du code d'AccessKit issu de Chromium, **absente du fichier livré avec la 0.9.0** ; polices relues (Noto Emoji, seule police OFL, non compilée) ; partie 3 du fichier vide et refusée par un test, contre-preuve vue en échec. Noms de personnes retirés de 13 sources (5 relevées, 8 trouvées en relisant), pseudonymes compris | W-043 et W-055 clos ; reste, avant la 0.10.0 : rien de ce lot |
 
-| 22 | 2026-11-18 | **Cadre des scripts firmware** (branche « docs/firmware-scripts-frame », **D-057**) : les quatre arbitrages de Cédric écrits en décision, le contrat des sept fonctions, la description de chaîne et les plages de versions ajoutés à [spec-betaflight.md](spec-betaflight.md) §8, résumé dans `AGENTS.md`. **Aucun code livré** | trois constats du code relevés au passage (ordre de chaîne en dur, une seule cadence, ordre du terme D) : le lot 23 doit les chiffrer |
+| 22 | 2026-11-18 | **Cadre des scripts firmware** (branche « docs/firmware-scripts-frame », **D-057**) : les quatre arbitrages de Cédric écrits en décision, le contrat des sept fonctions, la description de chaîne et les plages de versions ajoutés à [spec-betaflight.md](spec-betaflight.md) §8, résumé dans `AGENTS.md`. **Aucun code livré** | **W-058 ouvert** : la simulation temporelle garde une seule cadence et dérive avant de filtrer — limite assumée, invisible dans l'application (vérifié le 2026-11-18, après une première lecture trop rapide) |
 | 26 | — | **Sorti du plan le 2026-11-18** : INAV. Périmètre tranché par Cédric — Betaflight seul tant qu'il n'y a pas de vrais logs INAV. Rien n'était commencé | W-001 reste fermé, avec sa condition de reprise |
 | 27 | — | **Sorti du plan le 2026-11-18** : ArduCopter, même arbitrage. Son coût propre (lecteur DataFlash, alignement temporel) et son intérêt unique (seul firmware qui logge l'entrée des filtres à pleine cadence) sont consignés | **W-057 ouvert**, condition de reprise écrite |
 
