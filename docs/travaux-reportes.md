@@ -60,6 +60,7 @@ Règles d'écriture :
 
 | ID | Sujet | Statut |
 |---|---|---|
+| W-057 | ArduCopter (logs DataFlash `.bin`) non pris en charge | ouvert (périmètre Betaflight seul, 2026-11-18) |
 | W-026 | Rust / Python : zéros signés de `np.max` / `np.min`, et entrées jamais fournies par l'application (`fs` NaN dans `xcorr`…) | 🚫 SANS SUITE (2026-11-08) — plus de Python à égaler, aucun appelant ; écarts gardés en commentaire du code |
 | W-027 | Rust / Python : `margins` avec un masque d'un élément, `estimate` sur une grille de fréquences à pas nul (entrées jamais construites par l'application) | 🚫 SANS SUITE (2026-11-08) — mêmes raisons que W-026 |
 | W-028 | Rust / Python : références `analysis/` sans `Hover_Test5.bbl` (celles de `advisor/` et `flightlog.json` refaites le 2026-11-01), erreurs de la couche du réglage comparées par leur seule présence, `step_tuning` avec un NaN dans les curseurs | ouvert (prochain réenregistrement des références ; procédure « Refaire une référence Python » dans `docs/validation.md`, depuis 7-5) |
@@ -842,3 +843,22 @@ compositeur. Seul le banc de W-049 est relançable aujourd'hui (`banc_cadre`).
   gardent titre, date, lien et citation, et sont désignées par leur marque, leur site ou le chemin de leur preset ;
   `docs/assistant.md` (poids RPM des presets) suit. Contrôle : `git grep` des treize noms, plus aucun résultat hors de
   `THIRD-PARTY-LICENSES.txt` (où les licences exigent les auteurs).
+
+## Origine : périmètre des firmwares tranché par Cédric (2026-11-18)
+
+- **W-057** — **ArduCopter n'est pas pris en charge** : ses logs DataFlash (`.bin`) ne sont pas lus, et ni sa chaîne
+  de filtres ni son terme D (D sur l'erreur, filtres `FLTE` et `FLTD`, jusqu'à 16 harmoniques, six modes de suivi de
+  notch) ne sont implémentés. L'étude du 2026-11-17 le prévoyait en lot 27 du plan ; ce lot est **sorti du plan le
+  2026-11-18**.
+  **Pourquoi reporté** : arbitrage de Cédric du 2026-11-18 — périmètre **Betaflight seul**. Le corpus ne contient
+  aucun log ArduCopter, donc la règle de validation du projet (valider sur de vrais logs, en plus des tests
+  synthétiques) n'est pas tenable.
+  **Risque si on n'y touche pas** : un pilote ArduCopter ne peut pas utiliser l'application ; et le projet se prive
+  du seul firmware capable d'enregistrer l'entrée des filtres à pleine cadence (`INS_RAW_LOG_OPT`), donc du seul
+  test d'identité possible sur un vrai vol.
+  **Reprise** : des logs ArduCopter réels, dont au moins un enregistré avec `INS_RAW_LOG_OPT`, et la demande de
+  Cédric. Le coût propre ne bougera pas : un second lecteur de logs et l'alignement temporel de messages à cadences
+  différentes.
+  **Piste** : un lecteur DataFlash à côté du lecteur Blackbox, rendant la même `DecodedSession`, et l'alignement
+  temporel dans le cœur, avant toute analyse.
+  [`rust/otb-decoder/src/file.rs:DecodedSession`]

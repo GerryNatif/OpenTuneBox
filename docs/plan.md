@@ -14,7 +14,32 @@ Le programme est donc complet et publié, et depuis le 2026-11-10 **il ne reste 
 le lot 11 est fait le même jour). Les deux autres familles ont disparu le même jour : vérifier ce que seule une vraie machine vérifie
 (lot 13) n'avait plus d'objet, **personne n'ayant jamais utilisé la 0.8.0** ; et **plus aucun seuil de
 l'assistant n'est sans origine ni condition** (lot 14), sans qu'une seule valeur ait eu à changer. Le 2026-11-12, le
-lot 21 a relu les licences livrées et les sources, en vue de la **0.10.0** (la 1.0 est gardée pour plus tard).
+lot 21 a relu les licences livrées et les sources, en vue de la **0.10.0** (la 1.0 est gardée pour plus tard) ;
+la version du dépôt est 0.10.0.
+
+**Chantier ouvert le 2026-11-18 — scripts firmware.** Une étude du 2026-11-17 (document de travail de Cédric,
+hors dépôt) propose de faire d'OpenTuneBox un outil **multi-firmware** — Betaflight, INAV, ArduCopter — par un
+**script par firmware et par plage de versions** : le script *décrit* la chaîne de filtres et de PID sous forme de
+données et *fournit* les briques de calcul avec l'arithmétique exacte de sa famille, le cœur assemble et exécute.
+Elle est reprise ici en lots **22 à 25**. **Les quatre arbitrages du lot 22 sont rendus le 2026-11-18** : la chaîne
+est décrite en **données** avec des briques compilées en Rust (pas de moteur de script) ; le **banc de référence vit
+dans le dépôt** et ne copie aucun fichier de firmware ; la nouvelle chaîne de calcul **remplace l'ancienne d'un
+coup** au lot 24 ; et le périmètre reste **Betaflight seul**, ce qui a fait sortir du plan INAV (lot 26, W-001 reste
+fermé) et ArduCopter (lot 27, désormais W-057). Trois des sept questions ouvertes de l'étude avaient déjà leur
+réponse dans les registres — la licence au premier chef (D-045 : **aucune dépendance à copyleft**, et les trois
+firmwares sont sous GPL 3). Ce chantier **ne corrige aucun défaut connu** : il ajoute de la justesse.
+
+**Second chantier, du même moment — bibliothèque, refonte et USB.** Deux autres études de Cédric, également
+hors dépôt, ouvrent un chantier distinct et bien plus proche de l'utilisateur : un **canevas de neuf maquettes**
+du 2026-11-16 (tableau de bord par drone, navigation à deux niveaux, espace « Bruit et filtres » fusionné, écran
+d'extraction d'un **fragment** de vol, assistant en cartes) et une **spécification** du 2026-11-14 (récupération
+automatique des logs quand on branche un drone en USB, **stockage** des logs et des fragments, petite base
+**SQLite**, suivi des mesures dans le temps contre une fiche cible). Repris en lots **28 à 32**, dans cet ordre :
+la bibliothèque de données d'abord, parce que les fragments, la refonte et l'USB s'appuient tous dessus. Celui-ci
+**change la vie d'un pilote** — moins de gestes entre l'atterrissage et l'analyse, et des logs qui ne se perdent
+plus. Deux arbitrages sont déjà rendus (2026-11-18) : le stockage se fait en **fichiers JSON** et non en base
+(lot 28), et **D-015 est amendée** pour laisser une entrée de navigation regrouper plusieurs vues (lot 30). Il ne
+reste qu'une seule dépendance nouvelle à introduire, pour l'USB (lot 32).
 
 ## Comment s'en servir
 
@@ -33,14 +58,24 @@ lot 21 a relu les licences livrées et les sources, en vue de la **0.10.0** (la 
   vers Cédric ; ne pas improviser un autre découpage.
 - Modèle conseillé par lot : **Sonnet** pour le mécanique, la documentation, les tests ; **Opus** pour le
   décodeur, la mémoire et le débogage difficile.
-- La numérotation des lots est une **série unique**, jamais réutilisée : les lots 0 à 14 et 16 à 20
-  sont au tableau en bas (faits, non retenus ou supprimés), le prochain numéro libre est **21**.
+- La numérotation des lots est une **série unique**, jamais réutilisée : les lots 0 à 14 et 16 à 21
+  sont au tableau en bas (faits, non retenus ou supprimés), les lots 22 à 25 et 28 à 32 sont ouverts
+  ci-dessous, les lots 26 et 27 sont sortis du plan le 2026-11-18, et le prochain numéro libre est **33**.
 
 ## Ordre des étapes
 
 | # | Lot | Sujet | Dépend de |
 |---|---|---|---|
 | 1 | **15** | Dette de l'interface (W-052, pages spectrales) — **conditionnel** | le volet « cache » est soldé (L-094, D-053) ; le reste attend un déclencheur mesuré |
+| 2 | **22** | Cadre des scripts firmware : les quatre arbitrages écrits en décision, aucune ligne de code | rien ; **bloque 23 à 25** |
+| 3 | **23** | Chaîne Betaflight décrite en données, à résultat identique | lot 22 (la décision écrite) |
+| 4 | **24** | Briques à l'arithmétique du firmware, vecteurs de référence **et bascule** | lot 23 |
+| 5 | **25** | Plages de versions et veille des changements du firmware | lot 24 |
+| 6 | **28** | Bibliothèque de données : logs copiés, fragments, mesures (fichiers JSON) | rien ; **socle des lots 29 à 32** |
+| 7 | **29** | Fragments : écran d'extraction, index, liste d'analyse | lot 28 |
+| 8 | **30** | Refonte de la navigation et de la mise en page (les neuf maquettes) | lot 29, et le lot 23 pour l'espace « Bruit et filtres » |
+| 9 | **31** | Mesures suivies dans le temps et fiche cible par drone | lots 28 et 29 |
+| 10 | **32** | Récupération des logs par USB (MSP / MSC) — le plus risqué | lots 28 et 30 |
 
 Il ne reste que du **confort**, mesuré comme tel : le budget de 60 images par seconde est tenu avec une marge
 de 3 sur la plus longue session du corpus. Les lots qui touchaient à un utilisateur réel ont été réglés le
@@ -49,6 +84,12 @@ valeur de seuil ait eu à changer, et le **11** a livré l'ouverture de plusieur
 reste que le **15**, dont le volet « cache des outils » est **soldé le 2026-11-10** : mesuré (L-094), allégé, puis borné
 (D-053) — **W-035 est clos**. Ses autres volets (tracé du viewer, pages spectrales) attendent toujours leur déclencheur
 mesuré : ils peuvent attendre que les retours des pilotes disent ce qui gêne vraiment.
+
+Ce constat vaut pour le programme **tel qu'il est**. Les lots **22 à 27** ne le changent pas : ils n'accélèrent
+rien et ne corrigent rien pour un pilote Betaflight d'aujourd'hui — ils ouvrent un périmètre neuf, et deux
+d'entre eux attendent des logs que le corpus ne contient pas. Les lots **28 à 32**, eux, changent ce que vit
+l'utilisateur : ils gardent ses logs, nomment ses morceaux de vol, refont la navigation et suppriment l'étape
+manuelle de récupération. Si un seul chantier doit passer d'abord, c'est celui-là.
 
 ---
 
@@ -95,6 +136,332 @@ quatrième : elle a été mesurée le 2026-11-10, et le cache est borné depuis 
 
 ---
 
+---
+
+## Lot 22 : cadre des scripts firmware (Opus) — **arbitrages rendus, à écrire**
+
+**But** : écrire noir sur blanc ce qui décide de la forme de tout le reste. L'étude du 2026-11-17 posait sept
+questions ouvertes : trois avaient déjà leur réponse dans les registres, et **les quatre autres ont été
+tranchées par Cédric le 2026-11-18** (ci-dessous). Ce lot ne décide plus rien : il consigne, et ajoute à la
+spécification ce que les lots suivants devront respecter. **Aucune ligne de code.**
+
+**Branche** : « docs/firmware-scripts-frame ».
+
+**À lire** : [decisions.md](decisions.md) D-045 (licence), D-004 et D-005 (rien n'est copié), D-003 (hors ligne),
+D-033 (noyaux de calcul), D-047 (tolérance des références figées), D-011 (origine des seuils) ;
+[travaux-reportes.md](travaux-reportes.md) W-001 (INAV hors périmètre), W-002 (trop peu de drones), W-028
+(réenregistrement des références) ; [lecons.md](lecons.md) L-048 ; [spec-betaflight.md](spec-betaflight.md) §3.
+
+**Déjà tranché par les registres** — à rappeler dans la décision, pas à rediscuter :
+
+- **Licence.** Betaflight, INAV et ArduPilot sont sous **GPL 3**. D-045 refuse **toute dépendance à copyleft**
+  (« un refus, plus une discussion ») et D-004 interdit la copie de code. Donc : aucun fichier de firmware dans
+  le dépôt, et **rien de compilé depuis leur code dans ce qui est livré** — l'option de l'étude « compiler
+  directement le code du firmware » est **écartée**. Les briques restent réimplémentées d'après la lecture du
+  code, comme aujourd'hui.
+- **Hors ligne.** D-003 : un script ne va rien chercher sur le réseau à l'exécution.
+- **Ordre de travail.** Betaflight d'abord, comme le propose l'étude : c'est le seul firmware du corpus, et sa
+  chaîne est déjà codée.
+
+**Les quatre arbitrages** :
+
+- [x] **1. Forme du script — tranché par Cédric le 2026-11-18** : la chaîne est décrite dans un **fichier de
+      données versionné** dans le dépôt, et les **briques sont du Rust compilé** dans le programme, choisies
+      d'après la version du log. Pas de moteur de script : il n'achèterait qu'un rechargement à chaud, au prix de
+      la vitesse sur des millions d'échantillons, d'une surface de chargement de code exécutable (D-054) et d'une
+      dépendance ; et le WASM perd son seul vrai argument, puisque compiler le code du firmware est exclu par
+      D-045. **Conséquence assumée** : ajouter un firmware demande de recompiler et de publier une version.
+- [x] **2. Banc de référence — tranché par Cédric le 2026-11-18** : le banc vit **dans le dépôt**, sous la forme
+      d'un script **écrit par le projet** qui télécharge le firmware au moment de s'exécuter, le compile sur le
+      poste, et ne verse dans le dépôt que des **vecteurs de nombres**. Aucun fichier de firmware n'est copié ni
+      redistribué : D-045 est tenue, et la preuve reste refaisable par n'importe qui, y compris par la CI. ⚠️ Un
+      fichier du firmware qui finirait versionné, même « pour aller plus vite », casse cet arbitrage.
+- [x] **3. Cohabitation — tranché par Cédric le 2026-11-18 : bascule d'un coup**, dans le lot 24.
+      `rust/otb-analysis/src/bf_filters.rs` est tout en `f64`, porté de Python et validé à **tolérance mesurée**
+      (L-048, D-047) ; la nouvelle chaîne change tous les spectres « et si », donc les références figées
+      (réenregistrement, W-028) et les seuils de l'assistant calibrés sur le corpus (D-011). Cédric a écarté la
+      cohabitation « deux chaînes un temps » et choisi de tout faire dans un seul lot, le risque nommé — un seuil
+      qui change l'avis de l'assistant sur un vrai log — étant accepté. Il est donc **borné par l'ordre des étapes
+      du lot 24** et par son critère d'arrêt.
+- [x] **4. Périmètre — tranché par Cédric le 2026-11-18 : Betaflight seul.** **W-001 reste fermé** (INAV et KISS
+      hors périmètre) et les lots 26 (INAV) et 27 (ArduCopter) **sortent du plan**, chacun avec sa condition de
+      reprise écrite : des vrais logs. Raison : le corpus n'en contient aucun, et la méthode du projet exige une
+      validation sur de vrais logs — W-002 dit déjà ce que coûte un profil appuyé sur trop peu de drones. Le
+      travail des lots 23 à 25 garde tout son sens pour Betaflight seul, dont l'arithmétique change déjà d'une
+      version à l'autre. ArduCopter est consigné en **W-057**.
+
+- [ ] **Livrables** : une décision dans [decisions.md](decisions.md) qui porte les quatre arbitrages ; le contrat
+      des sept fonctions et la description de chaîne ajoutés à [spec-betaflight.md](spec-betaflight.md) (formules
+      lues dans le code, source citée à la ligne) ; **W-057 est déjà écrit** pour ArduCopter.
+- [ ] **Critère d'arrêt** : les quatre arbitrages sont rendus (2026-11-18). Ce lot ne fait plus que les écrire ;
+      s'il révèle qu'un arbitrage ne tient pas à l'écriture, s'arrêter et le dire plutôt que de l'arranger.
+
+---
+
+## Lot 23 : la chaîne Betaflight décrite en données (Opus)
+
+**But** : sortir du code l'**ordre** de la chaîne et le mettre dans une description de données, **sans changer un
+seul résultat**. C'est le lot qui rend les autres firmwares possibles, et le seul qui se prouve entièrement sur le
+corpus d'aujourd'hui.
+
+**Branche** : `refactor/chain-as-data`. **Dépend du lot 22** (arbitrages 1 et 3).
+
+**À lire** : `rust/otb-analysis/src/bf_filters.rs:simulate_gyro` et
+`rust/otb-analysis/src/bf_filters.rs:simulate_dterm`, [spec-betaflight.md](spec-betaflight.md) §3,
+`rust/otb-gui/src/tools/filter_sim.rs`, [lecons.md](lecons.md) L-048 et L-071.
+
+**Constats du dépôt** (relevés le 2026-11-18, à vérifier avant d'écrire) :
+
+- L'ordre est **en dur** dans `simulate_gyro` : LPF2 → notchs RPM → notchs statiques → LPF1 → notchs dynamiques.
+- Toute la chaîne tourne à la **cadence du log**, alors que le firmware filtre le LPF2 à la cadence **gyro** et le
+  reste à la cadence **PID** (§3). Les deux domaines de cadence de l'étude ne sont donc pas représentés.
+- `simulate_dterm` **dérive d'abord, puis filtre** ; le firmware **filtre `gyroADCf`, puis dérive** (§3). À filtres
+  fixes, une dérivée et un filtre linéaire commutent ; dès que le passe-bas D est **dynamique** (gaz) ou le notch
+  **variable**, ils ne commutent plus. ⚠️ Défaut candidat, pas un remaniement : à mesurer avant toute réécriture.
+
+- [ ] **Description de la chaîne en données** : étapes ordonnées (brique, cadence, paramètres, en service ou non),
+      **prises** (où le log a enregistré chaque signal — c'est ce qui décide du badge « simulé » de
+      `rust/otb-gui/src/tools/filter_sim.rs`) et **position de la dérivation**. `simulate_gyro` et `simulate_dterm`
+      la lisent au lieu de porter l'ordre en dur.
+- [ ] **Mesure des deux écarts** ci-dessus sur le corpus, dont un log aux gaz variables : chiffres dans
+      [validation.md](validation.md). Si l'écart du terme D est visible, il est **corrigé dans ce lot** et dit dans
+      la PR ; sinon il est consigné comme non mesurable et la commutation est écrite noir sur blanc.
+- [ ] **Preuve d'iso-résultat** (hors correction mesurée ci-dessus) : `cargo run --release -p otb-parity -- check`
+      0 écart, `verify --strict` 0 saut, et les captures de la page Simulateur **identiques au bit près** sur les
+      deux thèmes.
+- [ ] **Contre-preuve** (L-071) : une étape déplacée ou une cadence changée dans la description fait **rougir** un
+      test, vu en échec.
+- [ ] **Critère d'arrêt** : un seul résultat qui change sans explication chiffrée → s'arrêter et revenir vers Cédric.
+
+---
+
+## Lot 24 : briques à l'arithmétique du firmware (Opus)
+
+**But** : atteindre le bit à bit contre le firmware compilé sur PC, **et basculer l'application sur cette nouvelle
+chaîne dans le même lot** (arbitrage 3, tranché le 2026-11-18). C'est le plus gros lot du plan : il déplace un
+chiffre dans presque tous les écrans.
+
+**Branche** : `feat/firmware-exact-bricks`. **Dépend du lot 23.**
+
+**À lire** : `rust/otb-dsp/src/lib.rs` (les noyaux actuels, D-033), [decisions.md](decisions.md) D-029 (float32),
+D-047 et D-011, [travaux-reportes.md](travaux-reportes.md) W-028, [lecons.md](lecons.md) L-048 et L-051
+(⚠️ jamais `suboptimal_flops` : il change le résultat des calculs).
+
+⚠️ **Pourquoi l'ordre des étapes n'est pas négociable.** La chaîne actuelle est la référence de tout : les
+références figées, les seuils de l'assistant et les captures au bit près. La bascule d'un coup a été choisie en
+connaissance de cause ; elle ne tient que si chaque étape ci-dessous est **livrée et vérifiée avant la suivante**,
+et qu'aucune ne saute.
+
+- [ ] **24a — les briques, sans rien brancher.** Float32 à côté des actuelles, rangées par famille de firmware même si **seule celle de Betaflight est écrite** : tout en
+      float32 sauf là où le firmware calcule lui-même en double ; approximations du firmware recopiées ; **ordre
+      exact des opérations** (`état + k × (entrée − état)` n'a pas les mêmes bits que `(1 − k) × état + k × entrée`) ;
+      initialisations et moment du recalcul des coefficients recopiés ; **deux domaines de cadence** réellement
+      exécutés (cadence gyro, décimation, cadence PID). Rien de visible dans l'interface à ce stade.
+- [ ] **24b — les vecteurs de référence.** Balayage de fréquence, bruit, échelons, fréquences de notch variables.
+      La CI les rejoue et exige l'**égalité bit à bit** ; elle n'a pas le corpus, donc tout se prouve sur vecteurs
+      et sur `tests/data/jeno5_5s.bbl` (L-023).
+- [ ] **24c — l'écart chiffré sur tout le corpus, avant de brancher quoi que ce soit.** Différence entre l'ancienne
+      et la nouvelle chaîne sur les 535 logs, consignée dans [validation.md](validation.md). **C'est le point de
+      non-retour** : un écart plus grand que prévu s'explique **ici**, pas après la bascule.
+- [ ] **24d — la bascule.** L'interface passe à la nouvelle chaîne, les références figées sont réenregistrées
+      (W-028 en profite), et les captures sont refaites sur les deux thèmes.
+- [ ] **24e — les seuils de l'assistant revérifiés** (`otb-dev corpus calibrate`, compétence `calculs-corpus`).
+      ⚠️ Si un seuil change l'**avis** de l'assistant sur un vrai log, **s'arrêter** et revenir vers Cédric avec le
+      log et le chiffre : c'est exactement le risque accepté en choisissant la bascule d'un coup.
+- [ ] **Écart au vol réel mesuré et affiché**, jamais promis : écart entre gyro simulé et gyro enregistré, montré
+      dans l'interface avec sa cause quand le log ne contient pas l'entrée des filtres à pleine cadence.
+- [ ] **Critère d'arrêt** : un vecteur qui ne tombe pas au bit près sans cause identifiée (approximation, ordre des
+      opérations, initialisation), ou un avis de l'assistant qui change sans explication → s'arrêter, consigner,
+      revenir vers Cédric.
+
+---
+
+## Lot 25 : plages de versions et veille du firmware (Sonnet)
+
+**But** : qu'un script dise de quelles versions il répond, et qu'un changement d'arithmétique en amont soit vu
+**avant** qu'un pilote ne voie une simulation fausse.
+
+**Branche** : `feat/version-ranges`. **Dépend du lot 24.**
+
+- [ ] **Plage déclarée** par script : première version couverte, dernière version **vérifiée**, « ouverte » tant
+      qu'aucun changement n'est connu. Au-delà de la dernière vérifiée, la simulation reste possible mais
+      **marquée « non vérifiée »** dans l'interface.
+- [ ] **Ce qui coupe une plage** (écrit dans la spécification) : arithmétique d'une brique, ordre de la chaîne,
+      cadence, façon de calculer le terme D, noms ou plages des réglages. **Ce qui ne la coupe pas** : un nouveau
+      réglage par défaut, un champ de log sans effet sur le calcul.
+- [ ] **Veille** : un travail de CI compare, d'une version du firmware à la suivante, les fichiers qui portent le
+      calcul, puis rejoue les vecteurs. Il **télécharge et compare, ne garde rien** (D-045), et prend `--locked`
+      comme le reste de la CI.
+- [ ] **Critère d'arrêt** : une veille qui crie à chaque version sans rien apprendre → la retirer plutôt que la
+      laisser grincer.
+
+---
+
+## Lot 28 : bibliothèque de données (Opus) — **socle du second chantier**
+
+**But** : donner au logiciel une mémoire. Aujourd'hui il n'en a presque pas, et c'est ce qui bloque les
+fragments, le tableau de bord, le suivi des mesures et l'USB.
+
+**Branche** : `feat/data-library`.
+
+**Ce que le dépôt garde aujourd'hui** (relevé le 2026-11-18 — c'est la réponse au « à vérifier » de l'étude) :
+
+| Donnée | Où | Durée de vie |
+|---|---|---|
+| Logs | là où l'utilisateur les a rangés, **jamais copiés** | décodés en mémoire à chaque ouverture |
+| Résultats de calcul | cache en mémoire par log, clé = réglages + période (D-037), plafonné par outil (D-053) | perdus à la fermeture |
+| Fiches drone | `drones.json` (`rust/otb-gui/src/guide.rs`) : fichier temporaire puis renommage, fichier illisible mis de côté (D-039) | permanentes |
+| Mémoire de l'interface | stockage d'eframe (`rust/otb-gui/src/app.rs`) : **deux choses seulement** — la mémoire du Guide (phase, fiche choisie, rôle de chaque log) et le dernier dossier d'export | permanentes |
+
+**Tranché par Cédric le 2026-11-18 : des fichiers JSON, pas une base.** Le volume est petit — quelques milliers
+de fragments et quelques dizaines de milliers de mesures, soit quelques Mo relus au lancement — alors qu'une base
+embarquée apporterait un **compilateur C** dans la construction (CI Windows comprise) et la **première frontière
+FFI** d'un projet qui refuse `unsafe` dans ses propres caisses (D-054). C'est l'arbitrage « rien sans bénéfice
+démontrable ». La forme suit celle qui marche déjà pour les fiches drone : écriture dans un fichier temporaire
+puis renommage, fichier illisible mis de côté (D-039). Deux conséquences à tenir :
+
+- [ ] **Un seul module d'accès** : le reste du programme ne voit que des fonctions de lecture et d'écriture, jamais
+      des fichiers. C'est ce qui rendra le passage à une vraie base, plus tard, limité à un seul fichier.
+- [ ] **Déclencheur mesuré du changement**, écrit d'avance (comme pour le lot 15) : un fichier qui dépasse quelques
+      Mo, un lancement visiblement plus lent, ou une donnée perdue après une coupure. Sans l'un des trois, on n'y
+      revient pas.
+
+**Ce qui est copié** :
+
+- [ ] Les logs **récupérés par USB** sont copiés, puisque la carte est vidée ensuite ; ceux que l'utilisateur ouvre
+      lui-même restent où ils sont. ⚠️ Ne jamais écrire dans le dossier des vrais logs. Place disque annoncée à
+      l'utilisateur, et empreinte de chaque fichier pour refuser les doublons.
+
+- [ ] **Ce qu'on garde** : drones (clé = l'identifiant de la carte, le nom restant un libellé modifiable), logs,
+      fragments, configurations (l'historique des `diff all`), mesures (une ligne par fragment, axe et mesure),
+      liste d'analyse.
+- [ ] **Version de calcul** portée par chaque mesure **dès ce lot** : sans elle, le lot 31 garderait des chiffres
+      périmés sans le savoir, et le lot 24 (arithmétique du firmware) les invaliderait tous en silence.
+- [ ] **Reprise de `drones.json`** au premier lancement. ⚠️ L'étude prévoit de le garder lisible « tant que la
+      version Python doit pouvoir le lire » : **il n'y a plus de Python depuis le 2026-11-04** (D-035) — la
+      condition tombe, le fichier est importé puis laissé intact, rien de plus.
+- [ ] **Un fichier de base illisible, ou écrit par une version plus récente, n'est jamais écrasé en silence** :
+      même protection que les fiches drone (D-039), contre-preuve vue en échec (L-071).
+- [ ] **Critère d'arrêt** : dans un test, une donnée perdue entre deux lancements, ou un lancement qui prend une
+      seconde de plus qu'aujourd'hui → s'arrêter et revenir vers Cédric.
+
+---
+
+## Lot 29 : fragments (Opus)
+
+**But** : nommer et garder un morceau de vol, au lieu de redécouper à la main à chaque ouverture.
+
+**Branche** : `feat/fragments`. **Dépend du lot 28.**
+
+**Ce qui existe déjà** : `rust/otb-analysis/src/period.rs:auto_period` calcule la période de vol (décollage →
+atterrissage) et la période fait partie de la clé du cache des outils (D-037) ; le **rôle** de chaque log (filtres,
+série PID) est déjà retenu par la mémoire du Guide (D-039). Le fragment en est la généralisation : plusieurs par
+session, nommés, datés, avec leurs bornes.
+
+- [ ] **Écran d'extraction** (maquette A, hors menu) : ouvert depuis la timeline ou à l'ouverture d'un log,
+      poignées de début et de fin, et saisie à l'échantillon près dans le panneau.
+- [ ] **Index des fragments** en base : log d'origine, session, bornes, nom, rôle, date. Le rôle vient de la
+      mémoire du Guide : **le reprendre, pas le dupliquer**.
+- [ ] **Liste d'analyse** : ordre, couleur fixe par fragment, actif ou non, fragment de travail. ⚠️ Les couleurs
+      ne s'écrivent que dans `rust/otb-gui/src/theme.rs` (L-016), et les deux thèmes se vérifient.
+- [ ] **Preuve** : un fragment relu après redémarrage rend exactement les mêmes bornes et les mêmes résultats
+      (tests sur `tests/data/jeno5_5s.bbl`, puis sur le corpus) ; contre-preuve sur des bornes décalées d'un
+      échantillon.
+- [ ] **Critère d'arrêt** : un fragment qui ne retrouve pas son log (fichier déplacé) sans message clair.
+
+---
+
+## Lot 30 : refonte de la navigation et de la mise en page (Opus)
+
+**But** : appliquer le **prototype complet de l'application** du canevas du 2026-11-16. Cédric l'a désigné le
+2026-11-18 comme **la maquette qui fait foi** : les huit autres sont des essais, et en cas de désaccord c'est le
+prototype qui gagne.
+
+**Branche** : `feat/navigation-redesign`. **Dépend du lot 29**, et du **lot 23** pour l'espace « Bruit et filtres ».
+
+**Ce que montre le prototype** (relevé dans son code le 2026-11-18) : un **rail de navigation à gauche**, de sept
+entrées — Tableau de bord, Guide, Assistant, Bruit et filtres, Réponse indicielle, Curseurs PID, Configuration —
+et **deux écrans hors rail**, ouverts par un geste puis refermés : l'extraction d'un fragment et la fiche d'un
+drone (Identité, Machine, Configurations Betaflight, Fiche cible). L'espace « Bruit et filtres » porte les onglets
+Spectre, Fréq. × gaz, Fréq. × temps, un choix d'axe, et le panneau « Et si » qui remplace le Simulateur. Donc :
+**huit outils à plat deviennent sept entrées de rail plus un tableau de bord**, le seul regroupement étant
+Spectre + × gaz + × temps + Simulateur → « Bruit et filtres ».
+
+**Décision à écrire dans ce lot**, tranchée le 2026-11-18 (Cédric a demandé de décider) : **D-015 est amendée, pas
+remplacée.** Ce qui en reste tel quel : **aucune fenêtre séparée**, et **une vue cachée ne calcule pas** — cette
+seconde partie s'étend aux vues internes d'un espace, où elle compte davantage qu'avant, puisqu'un espace
+n'affiche qu'une vue sur quatre. Ce qui change : une entrée de navigation n'est plus forcément un outil, c'est
+**soit un outil, soit un espace qui regroupe plusieurs vues d'un même sujet** ; les boutons deviennent un rail à
+gauche ; et **deux écrans hors rail** sont permis. Ce qui ne change pas : le trait d'outil
+(`rust/otb-gui/src/tool.rs`) et la liste d'enregistrement (`rust/otb-gui/src/tools/mod.rs`) restent le point
+d'entrée unique — un espace s'y enregistre comme un outil, et chaque vue interne garde son calcul et son cache
+(D-037, D-053). Le texte de D-015 cite encore des fichiers Python : l'amendement le remet en termes Rust. D-040
+(écarts voulus avec l'ancienne interface Qt) se relit en même temps.
+
+- [ ] **Écrire l'amendement de D-015** dans [decisions.md](decisions.md) **avant la première ligne de code**, avec
+      les sept entrées du rail et les deux écrans hors rail comme contrat.
+- [ ] **Tableau de bord** : cartes de drones, timeline des fragments à droite (le plus récent en haut), « + » pour
+      ajouter un fragment à la liste d'analyse.
+- [ ] **Espace « Bruit et filtres »** : Gyro / Terme D, les trois vues en onglets, panneau de filtres modifiable
+      qui remplace le Simulateur. **Faire le lot 23 d'abord** : sinon le même code est déplacé deux fois.
+- [ ] **Assistant en cartes** triées par gravité, mesure contre seuil en jauge, constats « OK » repliés. ⚠️ Un
+      constat se reconnaît par sa clé, jamais par son titre (D-028).
+- [ ] **Preuve** : captures hors écran avant / après sur les deux thèmes, et le temps de cadre mesuré
+      (le budget de 60 images par seconde est tenu avec une marge de 3 aujourd'hui : il ne doit pas tomber sous 1).
+- [ ] **Critère d'arrêt** : une page qui perd son test, ou le budget d'images par seconde dépassé.
+
+---
+
+## Lot 31 : mesures suivies dans le temps (Opus)
+
+**But** : répondre à « est-ce que ce drone s'améliore ? », ce qu'aucun écran ne sait faire aujourd'hui.
+
+**Branche** : `feat/metrics-history`. **Dépend des lots 28 et 29.**
+
+- [ ] **Une ligne par fragment, axe et mesure** : latence, pic, temps de montée, marges, bruit du gyro et du
+      terme D, retard des filtres — avec les réglages de calcul qui l'ont produite et la version de calcul du
+      lot 28. Une mesure se jette quand les bornes du fragment ou cette version changent.
+- [ ] **Fiche cible par drone** (réactivité des PID, filtrage) et un graphique par mesure sur tous ses fragments,
+      la cible en bande.
+- [ ] ⚠️ **Dire lequel prime** : la cible du drone n'est pas un seuil de l'assistant (D-011, calibré sur le
+      corpus). Deux chiffres qui se contredisent à l'écran, c'est un utilisateur perdu.
+- [ ] **Critère d'arrêt** : une mesure stockée qui ne se recalcule pas à l'identique à la demande.
+
+---
+
+## Lot 32 : récupération des logs par USB (Opus) — **le plus risqué**
+
+**But** : brancher le drone, récupérer, vérifier, puis seulement effacer. Un log perdu est un vol à refaire ; un
+effacement reporté ne coûte rien.
+
+**Branche** : `feat/usb-retrieve`. **Dépend des lots 28 et 30.**
+
+- [ ] **Identité de la machine** par MSP : nom, identifiant de la carte, version du firmware, état armé,
+      occupation de la mémoire. L'identifiant de la carte est la clé ; le nom seul ne suffit pas (deux drones
+      peuvent le porter, et il se change en une commande).
+- [ ] **Deux voies de copie** : mode stockage de masse quand la carte le permet (rapide, seule voie pour une carte
+      SD), repli sur la lecture bloc par bloc en MSP (lent : plusieurs minutes pour 16 Mo). Barre de progression,
+      et une copie interrompue reprend au début.
+- [ ] ⚠️ **Jamais d'effacement sans vérification**, dans cet ordre : taille copiée = place annoncée, le décodeur
+      ouvre chaque log et en extrait au moins un fragment, les fichiers sont écrits sur le disque, **puis**
+      l'utilisateur confirme. Un échec de lecture interdit l'effacement, quelle que soit l'option choisie.
+- [ ] ⚠️ **Sécurité** : drone armé → aucune opération ; conseil de retirer les hélices ; un seul accès au port à la
+      fois (le configurateur de Betaflight peut l'occuper) ; droits sur le port série sous Linux et pilote du port
+      virtuel sous Windows, détectés et expliqués au lieu d'échouer.
+- [ ] **Sauvegarde de la configuration** au même branchement (`diff all`), gardée seulement si elle diffère de la
+      précédente : l'écran Configuration peut alors comparer deux versions des réglages, et plus seulement les
+      en-têtes de deux logs.
+- [ ] **Les huit points à vérifier** de l'étude, dans le code et la documentation de Betaflight, **avant** d'écrire
+      (elle a été rédigée de mémoire) : versions où le mode stockage de masse lit la mémoire interne, débit réel de
+      la lecture MSP, durée d'un effacement de 16 Mo et comment savoir qu'il est fini, format et stabilité de
+      l'identifiant de carte, effacement sur carte SD, bibliothèque série côté Rust, autres firmwares qui parlent
+      MSP, et faut-il appliquer les réglages « et si » directement sur la carte.
+- [ ] ⚠️ **Nouvelle dépendance et nouvelle surface** : licence vérifiée par `cargo deny` (`rust/deny.toml`), et
+      **aucun matériel en CI** — donc un port simulé pour les tests automatiques et une procédure d'essai à la main
+      écrite dans la documentation, comme pour les installateurs.
+- [ ] **Critère d'arrêt** : un seul chemin de code où l'effacement pourrait partir sans vérification complète →
+      s'arrêter net.
+
 ## Hors plan, volontairement
 
 Ces travaux reportés sont **vus et laissés** : aucun n'empêche un pilote d'utiliser OpenTuneBox aujourd'hui.
@@ -107,7 +474,8 @@ a été traité par le lot 21.
 
 | ID | Pourquoi il n'est pas dans un lot |
 |---|---|
-| W-001 | Logs KISS (`.TXT`) et INAV non décodés : hors périmètre, à rouvrir si Cédric change de radio ou de firmware |
+| W-001 | Logs KISS (`.TXT`) et INAV non décodés : **périmètre tranché le 2026-11-18, Betaflight seul** — reste fermé, à rouvrir si Cédric change de firmware ou si de vrais logs INAV arrivent (lot 26 sorti du plan) |
+| W-057 | ArduCopter (logs DataFlash `.bin`) non pris en charge : même arbitrage du 2026-11-18 ; reprise = des logs ArduCopter réels, dont un avec `INS_RAW_LOG_OPT` (lot 27 sorti du plan) |
 | W-002 | Profils whoop, 2–3,5" et 8"+ appuyés sur trop peu de drones : il faut **plus de logs**, pas plus de calcul |
 | W-004 | La boucle ouverte ne se mesure que jusqu'à 20–40 Hz : limite physique de l'énergie du manche |
 | W-022 | Tolérance par fonction et non par champ dans `otb-parity` : reprise si un écart est soupçonné sur `freqs` / `bins` / `resolution_hz` |
@@ -161,6 +529,9 @@ prouvés.**
 | 19 | 2026-11-11 | **Relecture des workflows en CI** (branche `chore/lint-workflows`, D-055) : job `actionlint` 1.7.12 dans `tests.yml`, vérifié par empreinte ; rien à installer sur le poste. Avant l'envoi : 19 scripts bash passés à `shellcheck`, rien à signaler | rien : `actionlint` est un contrôle exigé de `protection-main` depuis le 2026-11-11 |
 | 20 | 2026-11-11 | **Notes de version à la manière de Betaflight** (PR #147, D-056) : titre de PR en phrase et une étiquette `RN: …` (8 étiquettes créées, dont `dependencies`, absente jusque-là : L-096) ; `.github/release.yml` ; contrôle `etiquette-pr.yml` (rouge sans étiquette, vert avec, vu sur #147) ; `otb-dev release notes` traduit la liste de GitHub ; `CHANGELOG.md` supprimé. 86 PR étiquetées et retitrées, Dependabot excepté (#60 à #147). Page de la 0.9.0 refaite (50 Ko → 6 Ko) depuis une liste fabriquée en local, GitHub ne lisant `release.yml` que sur l'étiquette (L-097) | `etiquette` exigé par `protection-main` depuis le 2026-11-12 ; l'appel de `generate-notes` par le jeton de la CI sera éprouvé à la première étiquette `essai-v…` ou `v…` |
 | 21 | 2026-11-12 | **Licences livrées et sources sans nom** (branche « docs/licenses-and-sources-review », D-050 précisée) : textes des 22 composants sans fichier de licence copiés de leur dépôt d'origine (`rust/otb-dev/upstream-licenses/`, table `UPSTREAM`), dont la licence BSD du code d'AccessKit issu de Chromium, **absente du fichier livré avec la 0.9.0** ; polices relues (Noto Emoji, seule police OFL, non compilée) ; partie 3 du fichier vide et refusée par un test, contre-preuve vue en échec. Noms de personnes retirés de 13 sources (5 relevées, 8 trouvées en relisant), pseudonymes compris | W-043 et W-055 clos ; reste, avant la 0.10.0 : rien de ce lot |
+
+| 26 | — | **Sorti du plan le 2026-11-18** : INAV. Périmètre tranché par Cédric — Betaflight seul tant qu'il n'y a pas de vrais logs INAV. Rien n'était commencé | W-001 reste fermé, avec sa condition de reprise |
+| 27 | — | **Sorti du plan le 2026-11-18** : ArduCopter, même arbitrage. Son coût propre (lecteur DataFlash, alignement temporel) et son intérêt unique (seul firmware qui logge l'entrée des filtres à pleine cadence) sont consignés | **W-057 ouvert**, condition de reprise écrite |
 
 La migration Python → Rust elle-même, terminée le 2026-11-04, garde son propre document :
 [migration-rust.md](migration-rust.md) (phases, preuves d'équivalence, verdict du prototype d'interface).
