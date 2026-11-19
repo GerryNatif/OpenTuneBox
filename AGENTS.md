@@ -19,6 +19,11 @@ Contexte, options écartées et preuves : `docs/decisions.md`.
 - Dépôt **public**, licence **PolyForm Noncommercial 1.0.0** : code ouvert, tout usage commercial interdit, aucune dépendance copyleft (polices : chacune sous sa licence, D-046). D-043, D-045
 - **Aucune copie de code PIDtoolbox** ni d'autres projets : tout est réimplémenté d'après le firmware Betaflight et des méthodes publiées
   (`docs/spec-*.md`). Seule exception : les icônes [Lucide](https://lucide.dev) (ISC) dans `rust/otb-gui/assets/icons/`, avec leur licence. D-004, D-005
+- **Dessin de l'interface** : le **prototype complet de l'application** (canevas de Cédric, hors dépôt) fait foi — mesures, couleurs et
+  contenu s'y relèvent ; thème clair identique, thème sombre dérivé ; tout écart se justifie par écrit. D-058, D-059
+- **Scripts firmware** : la chaîne d'un firmware est décrite en **données**, ses briques sont du **Rust compilé** (jamais de moteur
+  de script) ; rien du code des firmwares (GPL 3) n'entre dans le dépôt ; périmètre **Betaflight seul** tant qu'il n'y a pas de vrais
+  logs INAV (W-001) ou ArduCopter (W-057). D-057
 - **Les sources sont citées sans nommer leurs auteurs** : une entrée `[S…]` de `docs/spec-methodes.md` garde titre, date, lien et
   citation, jamais de nom de personne — ni là, ni dans le code, ni dans les textes affichés. **Exception** : les **ouvrages
   publiés** gardent leurs auteurs (c'est ainsi qu'on cite un livre, et D-005 exige une source vérifiable à la page). D-050
@@ -44,7 +49,8 @@ ligne par lot fait. Ne jamais ouvrir un second document de plan : un plan qui ti
 
 - `otb-decoder` (BBL/BFL → valeurs brutes), `otb-log` (FlightLog en unités physiques, float32 : D-029 ; `parallel.rs` : plusieurs fichiers à la fois, D-051), `otb-dsp` (noyaux de calcul, D-033),
   `otb-analysis` (calculs purs), `otb-advisor` (assistant et guide intégré), `otb-format` (formats de nombres), `otb-cli` (`opentunebox info` / `report`),
-  `otb-gui` (egui), `otb-parity` (comparateur avec les références Python), `otb-dev` (outils de développement, jamais livrés).
+  `otb-gui` (egui), `otb-store` (bibliothèque de données : drones, logs copiés, fragments, réglages datés, mesures suivies — **fichiers JSON**, un seul module d'accès),
+  `otb-parity` (comparateur avec les références Python), `otb-dev` (outils de développement, jamais livrés).
 - `tests/data/jeno5_5s.bbl` : 5 s d'un vrai log, lu par une quinzaine de fichiers de tests ; les autres tests sont dans `rust/<crate>/tests/` ;
   `rust/otb-gui/tests/support/mod.rs:synthetic_log` fabrique un vol sans corpus. `packaging/` : installateurs. `docs/` : index dans `docs/README.md`.
 

@@ -60,6 +60,9 @@ Règles d'écriture :
 
 | ID | Sujet | Statut |
 |---|---|---|
+| W-059 | Place des traces (« Courbes ») dans le rail du prototype | ouvert (à trancher par Cédric au lot 30) |
+| W-058 | Simulation temporelle des filtres : une seule cadence et terme D dérivé avant filtrage | ouvert (limite assumée, invisible dans l'application) |
+| W-057 | ArduCopter (logs DataFlash `.bin`) non pris en charge | ouvert (périmètre Betaflight seul, 2026-11-18) |
 | W-026 | Rust / Python : zéros signés de `np.max` / `np.min`, et entrées jamais fournies par l'application (`fs` NaN dans `xcorr`…) | 🚫 SANS SUITE (2026-11-08) — plus de Python à égaler, aucun appelant ; écarts gardés en commentaire du code |
 | W-027 | Rust / Python : `margins` avec un masque d'un élément, `estimate` sur une grille de fréquences à pas nul (entrées jamais construites par l'application) | 🚫 SANS SUITE (2026-11-08) — mêmes raisons que W-026 |
 | W-028 | Rust / Python : références `analysis/` sans `Hover_Test5.bbl` (celles de `advisor/` et `flightlog.json` refaites le 2026-11-01), erreurs de la couche du réglage comparées par leur seule présence, `step_tuning` avec un NaN dans les curseurs | ouvert (prochain réenregistrement des références ; procédure « Refaire une référence Python » dans `docs/validation.md`, depuis 7-5) |
@@ -842,3 +845,57 @@ compositeur. Seul le banc de W-049 est relançable aujourd'hui (`banc_cadre`).
   gardent titre, date, lien et citation, et sont désignées par leur marque, leur site ou le chemin de leur preset ;
   `docs/assistant.md` (poids RPM des presets) suit. Contrôle : `git grep` des treize noms, plus aucun résultat hors de
   `THIRD-PARTY-LICENSES.txt` (où les licences exigent les auteurs).
+
+## Origine : périmètre des firmwares tranché par Cédric (2026-11-18)
+
+- **W-057** — **ArduCopter n'est pas pris en charge** : ses logs DataFlash (`.bin`) ne sont pas lus, et ni sa chaîne
+  de filtres ni son terme D (D sur l'erreur, filtres `FLTE` et `FLTD`, jusqu'à 16 harmoniques, six modes de suivi de
+  notch) ne sont implémentés. L'étude du 2026-11-17 le prévoyait en lot 27 du plan ; ce lot est **sorti du plan le
+  2026-11-18**.
+  **Pourquoi reporté** : arbitrage de Cédric du 2026-11-18 — périmètre **Betaflight seul**. Le corpus ne contient
+  aucun log ArduCopter, donc la règle de validation du projet (valider sur de vrais logs, en plus des tests
+  synthétiques) n'est pas tenable.
+  **Risque si on n'y touche pas** : un pilote ArduCopter ne peut pas utiliser l'application ; et le projet se prive
+  du seul firmware capable d'enregistrer l'entrée des filtres à pleine cadence (`INS_RAW_LOG_OPT`), donc du seul
+  test d'identité possible sur un vrai vol.
+  **Reprise** : des logs ArduCopter réels, dont au moins un enregistré avec `INS_RAW_LOG_OPT`, et la demande de
+  Cédric. Le coût propre ne bougera pas : un second lecteur de logs et l'alignement temporel de messages à cadences
+  différentes.
+  **Piste** : un lecteur DataFlash à côté du lecteur Blackbox, rendant la même `DecodedSession`, et l'alignement
+  temporel dans le cœur, avant toute analyse.
+  [`rust/otb-decoder/src/file.rs:DecodedSession`]
+
+- **W-058** — **La simulation temporelle des filtres ne suit ni les cadences du firmware ni son ordre du terme D.**
+  `rust/otb-analysis/src/bf_filters.rs:simulate_gyro` fait tourner toute la chaîne à la **cadence du log**, alors que
+  le firmware filtre le LPF2 à la cadence gyro et le reste à la cadence PID ; et
+  `rust/otb-analysis/src/bf_filters.rs:simulate_dterm` **dérive puis filtre**, quand le firmware filtre `gyroADCf`
+  puis dérive. Vérifié le 2026-11-18.
+  **Pourquoi reporté** : ces deux fonctions ne sont appelées que par les tests et par `otb-parity`. Ce que
+  l'application affiche passe par `rust/otb-analysis/src/bf_filters.rs:whatif_spectrum`, qui multiplie le spectre
+  enregistré par un **rapport de réponses** calculé depuis `rust/otb-analysis/src/bf_filters.rs:gyro_chain` — lequel
+  porte bien les deux cadences, et où l'ordre des filtres ne change rien (un produit commute). **Aucun pilote ne voit
+  donc ces deux écarts.** Les corriger changerait les références figées sans rien changer à l'écran.
+  **Risque si on n'y touche pas** : un agent suivant peut croire la simulation temporelle fidèle au firmware et s'en
+  servir comme référence ; et la cadence unique restera fausse le jour où cette fonction servira à afficher une
+  courbe temporelle.
+  **Reprise** : quand la simulation temporelle alimente un écran (trait « gyro simulé » dans le temps), ou au lot 24,
+  qui réenregistre de toute façon les références et impose le bit à bit contre le firmware.
+  **Piste** : la description unique du lot 23, dont la simulation temporelle se déduit avec la cadence de chaque
+  étape ; l'ordre du terme D vient alors de la position de la dérivation (D-057, `derivation`).
+  [`rust/otb-analysis/src/bf_filters.rs:simulate_gyro`]
+
+## Origine : refonte de la navigation, lot 30 (2026-11-19)
+
+- **W-059** — **Le prototype complet de l'application n'a pas d'entrée « Courbes » dans son rail.** Ses sept entrées
+  sont Tableau de bord, Guide, Assistant, Bruit et filtres, Réponse indicielle, Curseurs PID et Configuration ; les
+  traces apparaissent par un bouton « Traces » **dans** un espace. Or le visualiseur
+  (`rust/otb-gui/src/viewer_page.rs`) est aujourd'hui une entrée à part entière, et c'est la page qu'on ouvre en
+  premier avec un log.
+  **Pourquoi reporté** : retirer une entrée de navigation que le pilote utilise tous les jours ne se décide pas en
+  lisant une maquette ; et le lot 30 peut livrer le rail sans trancher ce point (les traces gardent leur entrée en
+  attendant).
+  **Risque si on n'y touche pas** : le rail aura huit entrées là où le prototype en montre sept, donc un écart
+  visible entre la maquette qui fait foi et le programme.
+  **Reprise** : à la première question de Cédric sur le rail, ou quand l'espace « Bruit et filtres » existera (lot
+  30b) — on verra alors si les traces y ont leur place ou s'il leur faut la leur.
+  [`rust/otb-gui/src/viewer_page.rs`]

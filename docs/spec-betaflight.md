@@ -191,3 +191,60 @@ pitch seulement : pr = roll_pitch_ratio, pp = pitch_pi_gain (1 en roll / yaw). A
   `P = 0.032029·Kp·err·TPA` ; I croît de `0.244381·Ki·err` par seconde (yaw × 2,5) ;
   `D = 0.000529·Kd·(−dgyro/dt)·dMax·TPA`; `F = 0.013754·(F/100)·setpointSpeed`.
 - `vbatLatest` en 0,01 V, `amperageLatest` en 0,01 A (convertis par le décodeur).
+
+## 8. Contrat d'un script firmware (D-057)
+
+Un script **décrit** la chaîne d'un firmware et **fournit** ses briques de calcul ; le cœur assemble et exécute.
+Aucune des sept fonctions n'affiche quoi que ce soit ni ne lit de fichier.
+
+| Fonction | Entrée | Sortie |
+|---|---|---|
+| `identifier` | en-tête du log | firmware, plage de versions couverte, confiance (exacte ou approchée) |
+| `lire_signaux` | champs ou messages du log | nom brut → signal interne (gyro brut, gyro filtré, consigne, P, I, D, F, moteurs, eRPM, debug), avec échelle, unité, ordre des axes, sens des champs debug selon le mode actif, et position du signal dans la chaîne |
+| `lire_reglages` | en-tête, `diff all` ou paramètres | réglages normalisés : nom interne, valeur, unité, nom firmware |
+| `decrire_chaine` | réglages | étapes ordonnées des chaînes gyro et D : brique, paramètres, cadence, en service ou non, et les signaux enregistrés qui leur correspondent |
+| `frequences_suivies` | signaux du log | fréquence de chaque notch suivi, à chaque échantillon (eRPM, télémétrie ESC, gaz, debug FFT) |
+| `briques` | type + paramètres + cadence | un filtre exécutable : `init`, `mettre_a_jour(freq)`, `appliquer(x)` |
+| `ecrire_cli` | réglages modifiés | commandes `set` (ou paramètres, pour un firmware qui n'a pas de CLI), avec les plages autorisées pour l'interface |
+
+Description de chaîne, exemple (Betaflight 4.5, extrait) :
+
+```json
+{
+  "gyro": [
+    {"id": "lpf2", "brique": "bf.pt1", "cadence": "gyro", "params": {"hz": 500}, "cli": "gyro_lpf2_static_hz"},
+    {"id": "rpm",  "brique": "bf.notch_rpm", "cadence": "pid", "freq": "erpm", "params": {"harmoniques": 3, "q": 500}},
+    {"id": "lpf1", "brique": "bf.pt1", "cadence": "pid", "params": {"hz": 165}, "utilise": false}
+  ],
+  "prises": {"gyro_unfilt": "avant:lpf2", "gyro": "apres:fin"},
+  "derivation": {"chaine": "d", "position": "apres:d_lpf2", "signe": -1}
+}
+```
+
+- `prises` dit **où le log a enregistré chaque signal** : c'est ce qui décide si l'interface affiche « simulé ».
+- `derivation` place la dérivée du terme D dans la chaîne. Elle couvre les trois manières de le calculer : dériver
+  le gyro filtré après ses filtres D (Betaflight), dériver entre deux filtres D (INAV), dériver l'erreur
+  consigne − mesure (ArduCopter). **Le cœur ne suppose rien** : il lit cette position.
+
+### Plages de versions
+
+- Chaque script déclare sa plage : première version couverte, dernière version **vérifiée**, et « ouverte » tant
+  qu'aucun changement n'est connu. Au-delà de la dernière vérifiée, la simulation reste possible mais **marquée
+  « non vérifiée »**.
+- **Coupe une plage** : un changement d'arithmétique d'une brique, de l'ordre de la chaîne, d'une cadence, de la
+  façon de calculer le terme D, ou des noms et plages des réglages.
+- **Ne coupe pas une plage** : un nouveau réglage par défaut (il arrive par `lire_reglages`), un champ de log sans
+  effet sur le calcul.
+
+### Trois niveaux de fidélité
+
+| Niveau | Ce qui est garanti | Rôle |
+|---|---|---|
+| Même algorithme | même ordre, mêmes formules de coefficients, mêmes approximations ; écart de l'ordre de 1e-6 en relatif | l'engagement du logiciel |
+| Bit à bit | sortie identique au bit près à une exécution du firmware compilé sur PC | le critère de test de chaque script |
+| Identité au vol réel | la simulation retombe sur le gyro filtré enregistré | **mesuré et affiché, jamais promis** : il faut que le log contienne l'entrée du filtre à pleine cadence |
+
+⚠️ Une chaîne identique sur le papier peut changer d'implémentation sans qu'aucun réglage ne change : c'est pourquoi
+un script s'arrête au premier changement de calcul. Exemple annoncé par l'étude du 2026-11-17, **à vérifier dans les
+sources avant de s'en servir** : les notchs de Betaflight 4.x seraient des biquads, ceux de la branche de
+développement des filtres à variables d'état.
