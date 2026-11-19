@@ -67,25 +67,12 @@ pub enum Screen {
     Tool(usize),
 }
 
-/// Largeur du rail de navigation, en points : celle du prototype qui fait foi (D-058).
-pub const RAIL_WIDTH: f32 = 212.0;
-
-/// Bouton d'une entrée de navigation : icône colorée (si l'entrée en a une) puis le titre.
-fn tab_button<'a>(title: &'a str, on: bool, theme: &Theme) -> egui::Button<'a> {
-    match tab_icon(title) {
-        Some((name, color)) => {
-            let tint = color.map_or(theme.ui.text, |c| theme.accent(c));
-            egui::Button::image_and_text(icon(name, 16.0).tint(tint), title).selected(on)
-        }
-        None => egui::Button::new(title).selected(on),
-    }
-}
-
 /// Icône et couleur d'accent de l'onglet de la barre du haut, comme `TOOLS` de `gui/main_window.py` (`None` : pas d'onglet à lui,
 /// il s'ouvre depuis un autre bouton ; couleur `None` : celle du texte).
 pub fn tab_icon(title: &str) -> Option<(&'static str, Option<&'static str>)> {
     match title {
         "Tableau de bord" => Some(("layout-dashboard", None)),
+        "Guide" => Some(("book-open", None)),
         "Courbes" => Some(("activity", None)),
         // l'espace du bruit et des filtres garde l'icône et la couleur de sa première vue (D-058)
         "Bruit et filtres" | "Analyse spectrale" => Some(("audio-waveform", Some("blue"))),
@@ -95,6 +82,44 @@ pub fn tab_icon(title: &str) -> Option<(&'static str, Option<&'static str>)> {
         "Assistant" => Some(("lightbulb", Some("orange"))),
         _ => None,
     }
+}
+
+/// Mesures du rail, prises dans le prototype qui fait foi (D-058) : largeur, marges du panneau, espace entre
+/// deux entrées, et le dessin d'une entrée (coins, marges intérieures, taille du texte).
+pub const RAIL_WIDTH: f32 = 212.0;
+const RAIL_PAD_X: i8 = 10;
+const RAIL_PAD_Y: i8 = 14;
+const RAIL_GAP: f32 = 6.0;
+const ENTRY_RADIUS: u8 = 6;
+const ENTRY_PAD: egui::Vec2 = egui::vec2(10.0, 7.0);
+const ENTRY_TEXT: f32 = 13.5;
+
+/// Une entrée du rail, au dessin de la maquette : à plat, le texte à gauche ; choisie, un fond bleu très pâle et
+/// le texte en bleu d'accent, en demi-gras.
+fn rail_entry<'a>(title: &'a str, on: bool, theme: &Theme) -> egui::Button<'a> {
+    let (fond, texte) = if on {
+        (theme.ui.select, theme.ui.highlight)
+    } else {
+        (egui::Color32::TRANSPARENT, theme.ui.text)
+    };
+    let mut rich = egui::RichText::new(title).size(ENTRY_TEXT).color(texte);
+    if on {
+        rich = rich.strong();
+    }
+    let bouton = match tab_icon(title) {
+        Some((name, color)) => {
+            let tint = color.map_or(texte, |c| theme.accent(c));
+            egui::Button::image_and_text(icon(name, 16.0).tint(tint), rich)
+        }
+        None => egui::Button::new(rich),
+    };
+    // ⚠️ `selected` ne sert pas qu'à l'œil : il met l'entrée à l'état « coché » dans l'arbre d'accessibilité, ce
+    // qu'un lecteur d'écran annonce et ce que les tests lisent. Les couleurs, elles, restent celles de la maquette.
+    bouton
+        .selected(on)
+        .fill(fond)
+        .stroke(egui::Stroke::NONE)
+        .corner_radius(ENTRY_RADIUS)
 }
 
 pub struct App {
@@ -379,6 +404,17 @@ impl App {
         true
     }
 
+    /// Demande des fichiers au système, puis les ouvre. La barre du haut et le tableau de bord passent tous
+    /// deux par ici : une seule porte vers la boîte de dialogue.
+    fn ask_files(&mut self) {
+        if let Some(paths) = rfd::FileDialog::new()
+            .add_filter("Blackbox", &["bbl", "bfl", "BBL", "BFL", "txt", "TXT"])
+            .pick_files()
+        {
+            self.open(paths);
+        }
+    }
+
     /// Range un fichier ouvert dans la bibliothèque : **un enregistrement par fichier** (ses sessions deviendront
     /// des fragments, lot 29b), et son drone reconnu par le **nom de machine** de l'en-tête. Tant que la
     /// récupération par USB n'apporte pas l'identifiant de la carte (lot 32), c'est la seule identité disponible :
@@ -405,15 +441,31 @@ impl App {
         }
         drone.last_seen = date.clone();
         self.library.put_drone(drone);
+        let id = otb_store::fingerprint(&bytes);
         self.library.add_log(otb_store::model::LogEntry {
-            id: otb_store::fingerprint(&bytes),
+            id: id.clone(),
             drone_id: nom,
             name: nom_court(path),
             path: path.display().to_string(),
             copied: false,
             bytes: bytes.len() as u64,
-            added: date,
+            added: date.clone(),
         });
+        // ⚠️ Chaque session devient un **fragment** couvrant le vol entier, nommé comme le prototype le montre
+        // (« FINAL », « FINAL.02 »). L'écran d'extraction (lot 29b) ne fera que resserrer ses bornes : sans cela
+        // le tableau de bord afficherait « 0 fragment » sur tous les drones.
+        for log in logs {
+            self.library.put_fragment(otb_store::model::Fragment {
+                id: format!("{id}-{}", log.session),
+                log_id: id.clone(),
+                session: log.session as u64,
+                start: 0,
+                end: log.n() as u64,
+                name: log.name(),
+                role: String::new(),
+                date: date.clone(),
+            });
+        }
     }
 
     /// Le rail de navigation, à gauche (D-058) : une entrée par outil ou par **espace**. Les vues d'un espace
@@ -423,35 +475,54 @@ impl App {
         egui::Panel::left("rail")
             .default_size(RAIL_WIDTH)
             .size_range(RAIL_WIDTH..=RAIL_WIDTH)
+            .frame(
+                egui::Frame::new()
+                    .fill(theme.ui.base)
+                    .inner_margin(egui::Margin {
+                        left: RAIL_PAD_X,
+                        right: RAIL_PAD_X,
+                        top: RAIL_PAD_Y,
+                        bottom: RAIL_PAD_Y,
+                    })
+                    .stroke(egui::Stroke::NONE),
+            )
             .show(root, |ui| {
+                // trait de séparation à droite, comme la maquette (1 pt)
+                let decalage = egui::vec2(f32::from(RAIL_PAD_X), 0.0);
+                let cadre = ui.max_rect();
+                ui.painter().line_segment(
+                    [cadre.right_top() + decalage, cadre.right_bottom() + decalage],
+                    egui::Stroke::new(1.0, theme.ui.border),
+                );
+                ui.spacing_mut().item_spacing.y = RAIL_GAP;
+                // marges intérieures d'un bouton : celles de la maquette (10 × 7)
+                ui.spacing_mut().button_padding = ENTRY_PAD;
                 let shown = match self.screen {
                     Screen::Tool(j) => self.pages.get(j).map(|p| p.tab()),
                     _ => None,
                 };
                 // chaque entrée prend toute la largeur, son texte aligné à gauche comme dans le prototype
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
-                    let on_dash = self.screen == Screen::Dashboard;
                     if ui
-                        .add(tab_button("Tableau de bord", on_dash, theme).frame(on_dash))
+                        .add(rail_entry("Tableau de bord", self.screen == Screen::Dashboard, theme))
                         .clicked()
                     {
                         self.screen = Screen::Dashboard;
                     }
-                    let on_guide = self.screen == Screen::Guide;
-                    let guide = egui::Button::image_and_text(icon("book-open", 16.0).tint(theme.ui.text), "Guide")
-                        .selected(on_guide)
-                        .frame(on_guide);
-                    if ui.add(guide).clicked() {
+                    if ui
+                        .add(rail_entry("Guide", self.screen == Screen::Guide, theme))
+                        .clicked()
+                    {
                         self.screen = Screen::Guide;
                     }
                     let courbes = self.screen == Screen::Viewer || shown == Some("Courbes");
-                    if ui.add(tab_button("Courbes", courbes, theme).frame(courbes)).clicked() {
+                    if ui.add(rail_entry("Courbes", courbes, theme)).clicked() {
                         self.screen = Screen::Viewer;
                     }
                     for (i, p) in self.pages.iter().enumerate().filter(|(_, p)| !p.hidden()) {
                         // l'entrée porte le nom de l'espace quand la page en fait partie (D-058)
                         let on = self.screen == Screen::Tool(i) || shown == Some(p.title());
-                        if ui.add(tab_button(p.entry(), on, theme).frame(on)).clicked() {
+                        if ui.add(rail_entry(p.entry(), on, theme)).clicked() {
                             self.screen = Screen::Tool(i);
                         }
                     }
@@ -511,12 +582,8 @@ impl App {
                     egui::RichText::new("Ouvrir…").color(on_accent).strong(),
                 )
                 .fill(theme.ui.highlight);
-                if ui.add(open).on_hover_text("Ouvrir des logs Blackbox").clicked()
-                    && let Some(paths) = rfd::FileDialog::new()
-                        .add_filter("Blackbox", &["bbl", "bfl", "BBL", "BFL", "txt", "TXT"])
-                        .pick_files()
-                {
-                    self.open(paths);
+                if ui.add(open).on_hover_text("Ouvrir des logs Blackbox").clicked() {
+                    self.ask_files();
                 }
                 // fermer le log affiché / tous les logs (grisés sans log)
                 let any = !self.state.logs.is_empty();
@@ -584,7 +651,9 @@ impl App {
         let mut dash_actions = Vec::new();
         egui::CentralPanel::default().show(root, |ui| match self.screen {
             Screen::Dashboard => {
-                dash_actions = self.dash.ui(ui, &self.library, &self.state, &theme);
+                dash_actions = self
+                    .dash
+                    .ui(ui, &self.library, &self.guide.cards.list, &self.state, &theme);
             }
             Screen::Viewer => {
                 self.viewer.ui(ui, &mut self.state, &theme);
@@ -607,8 +676,13 @@ impl App {
         for a in dash_actions {
             match a {
                 DashAction::Guide(nom) => {
-                    self.guide.select_by_name(&nom);
+                    if let Some(n) = nom {
+                        self.guide.select_by_name(&n);
+                    }
                     self.screen = Screen::Guide;
+                }
+                DashAction::OpenDialog => {
+                    self.ask_files();
                 }
                 DashAction::Open(path) => self.open(vec![path]),
             }

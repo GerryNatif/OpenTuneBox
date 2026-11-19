@@ -332,8 +332,21 @@ d'entrée unique — un espace s'y enregistre comme un outil, et chaque vue inte
       dans les deux thèmes.
 - [x] **Un défaut attrapé par la capture, pas par les tests** : le caractère « ✓ » n'existe dans aucune police
       embarquée et fait **paniquer** l'application. Le piège était déjà écrit (L-068) : remplacé par une icône.
-- [ ] **La timeline des fragments** remplacera la liste des logs quand les fragments existeront (lot 29b) : le
-      « + » ajoutera alors un fragment à la liste d'analyse, comme dans le prototype.
+**Repris le 2026-11-19 — 30c bis, au dessin de la maquette (D-059)** : Cédric a rappelé que « le design doit
+correspondre à 100 % à la maquette ». Les trois lots précédents en avaient la structure, pas le dessin.
+
+- [x] **Carte de drone au détail près** : badge teinté 44 × 44 à l'icône du quadricoptère, nom 16 et sous-titre 12,5,
+      pastille d'état, « Fragments » et « Dernier vol » en deux colonnes, étape du parcours, barre d'avancement de
+      6 points, trait bleu de 2 points et ombre portée sur la carte choisie. Mesures en constantes nommées.
+- [x] **Entrée de rail** au fond bleu pâle et au texte bleu quand elle est choisie, à plat sinon ; panneau blanc,
+      trait de séparation, marges de la maquette. ⚠️ `selected` est **gardé** : il met l'entrée à l'état « coché »
+      pour un lecteur d'écran, ce que les couleurs seules ne font pas.
+- [x] **Trois écarts assumés et écrits** (D-059) : thème sombre dérivé, un fragment par session ouverte, avancement
+      compté sur les cases cochées à la main.
+- [x] **Deux couleurs ajoutées au thème** (`select`, `border`) : tout le reste de la palette de la maquette s'y
+      trouvait déjà. Trois icônes ajoutées, dont celle du drone, dessinée d'après la maquette.
+- [ ] **Le « + » d'un fragment ajoutera à la liste d'analyse** (et non plus seulement ouvrir son vol) quand l'écran
+      d'extraction existera (lot 29b).
 - [ ] **L'avancement du parcours** sur la carte (« Étape 2 / 4 · Filtres ») demande les vérifications du Guide,
       qui coûtent une analyse par log : à faire avec le lot 30d, pas en ouvrant le tableau de bord.
 **Fait le 2026-11-19 — 30b, l'espace** :

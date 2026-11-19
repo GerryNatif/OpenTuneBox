@@ -68,10 +68,12 @@ la fiche de votre drone et les vérifie dans chaque log. En bref :
 - **Un clic dans le rail** remplace l'affichage par l'outil choisi, dans la même fenêtre
   (aucune nouvelle fenêtre) ; l'entrée de l'affichage en cours est mise en valeur. **Courbes** ramène aux
   courbes du vol. Un outil garde ses réglages et ses résultats quand on passe à un autre.
-- **Tableau de bord** : une carte par drone que le logiciel a déjà vu, avec son firmware, le nombre de logs connus et
-  la date du plus récent. « Voir ses logs » ouvre la liste de ses vols à droite, et le bouton **+** rouvre un log sans
-  passer par la boîte de fichiers. Le logiciel retient ces drones et ces logs **d'un lancement à l'autre** : un drone
-  est reconnu par le nom de machine inscrit dans ses logs.
+- **Tableau de bord** : une carte par drone que le logiciel a déjà vu — son nom, sa taille, où il en est du parcours
+  de réglage, son nombre de **fragments** et la date du dernier vol. Cliquer une carte ouvre à droite la liste de ses
+  fragments, du plus récent en haut ; le rond **+** rouvre le vol correspondant sans passer par la boîte de fichiers,
+  et une coche verte marque ceux qui sont déjà ouverts. Le logiciel retient ces drones et ces vols **d'un lancement à
+  l'autre** : un drone est reconnu par le nom de machine inscrit dans ses logs, et chaque session ouverte devient un
+  fragment couvrant le vol entier.
 - **Une entrée peut réunir plusieurs vues** : **Bruit et filtres** porte le **Spectre**, **Fréq. × gaz**,
   **Fréq. × temps** et le **Et si** des filtres. Ses onglets, en haut de la page, passent de l'une à l'autre sans
   repasser par le rail. Configuration, elle, s'ouvre depuis le bouton en bas du panneau de droite du visualiseur.

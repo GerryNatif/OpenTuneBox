@@ -70,6 +70,7 @@ ici, jamais dans le code.
 
 | ID | Décision | Date |
 |---|---|---|
+| D-059 | **Le dessin de l'interface suit le prototype au détail près** : mesures, couleurs et contenu relevés dans la maquette qui fait foi ; thème clair identique, thème sombre dérivé ; un écart se justifie par écrit | 2026-11-19 |
 | D-058 | Amende D-015 : une entrée de navigation est **un outil ou un espace** qui regroupe plusieurs vues ; les boutons deviennent un **rail à gauche** ; deux écrans hors rail sont permis. Ce qui reste : aucune fenêtre séparée, une vue cachée ne calcule pas | 2026-11-19 |
 | D-057 | Scripts firmware : chaîne décrite en **données**, briques **compilées en Rust** (pas de moteur de script) ; rien du code des firmwares dans le dépôt ; banc de référence qui télécharge et ne garde que des vecteurs ; bascule d'un coup de la chaîne de calcul ; périmètre **Betaflight seul** | 2026-11-18 |
 | D-056 | Notes de version **générées par GitHub** : titre de PR = phrase en français, une étiquette `RN: …` par PR (rubriques de `.github/release.yml`, contrôle `etiquette-pr.yml`) ; `CHANGELOG.md` supprimé ; remplace « titre de PR = nom de la branche » | 2026-11-11 |
@@ -130,6 +131,40 @@ ici, jamais dans le code.
 | D-001 | Python + PySide6 + pyqtgraph, projet privé, interface en français **(amendée par D-035)** | 2026-10-01 |
 
 ---
+
+## 2026-11-19 — Fidélité au prototype
+
+### D-059 : le dessin de l'interface suit le prototype au détail près
+
+Complète D-058, qui ne fixait que la **structure** de la navigation.
+
+**Contexte.** Le 2026-11-19, après la livraison du rail, de l'espace « Bruit et filtres » et du tableau de bord,
+Cédric reprend : « le design du logiciel doit correspondre à 100 % à la maquette ». Les trois lots avaient repris
+la **structure** du prototype (entrées, regroupements, écrans) mais pas son **dessin** : cartes au cadre egui
+ordinaire, pas de pastille d'état, pas de barre d'avancement, entrée de rail au style egui plutôt qu'au fond bleu
+pâle de la maquette.
+
+**Décision.**
+- Le **prototype complet de l'application** (canevas du 2026-11-16) fait foi pour le dessin comme pour la
+  structure : **mesures** (tailles de texte, coins, marges, hauteurs), **couleurs** et **contenu** des écrans s'y
+  relèvent, et le code les porte en constantes nommées, groupées en tête du fichier de l'écran.
+- **Thème clair identique à la maquette** ; la maquette n'existe qu'en clair, donc le **thème sombre garde ses
+  formes et ses mesures** et prend les couleurs sombres de `rust/otb-gui/src/theme.rs`. ⚠️ Toute couleur passe par
+  le thème, jamais en dur (L-016) : la palette de la maquette s'y trouvait déjà presque entière — le bleu
+  `highlight` `#1f57c3`, `muted` `#5c5c5c`, `mid` `#c4c4c4`, `hover` `#e4e7ec`, les accents vert et orange — et
+  seuls `select` (`#e8eefa`, fond d'une entrée choisie) et `border` (`#e1e3e8`) ont été ajoutés.
+- **Un écart au dessin se justifie par écrit**, dans le code et dans le plan, sinon il se corrige.
+- Trois écarts sont ainsi assumés, tranchés par Cédric le même jour : le **thème sombre** est dérivé ; chaque
+  **session ouverte devient un fragment** couvrant le vol entier (sinon le compteur « Fragments » de la carte
+  afficherait 0 partout jusqu'au lot 29b) ; et l'**avancement** d'une carte ne compte que les cases cochées à la
+  main, les cases vérifiées par un log demandant une analyse par log.
+- Option écartée : « assez proche ». Une maquette qui fait foi ne se respecte pas à moitié — c'est elle qui tient
+  l'unité de l'interface quand les écrans s'ajoutent un par un.
+
+**Témoins.** `rust/otb-gui/src/dashboard.rs` (mesures de la maquette en constantes nommées en tête de fichier) et
+`rust/otb-gui/src/app.rs:rail_entry` ; les deux couleurs ajoutées dans `rust/otb-gui/src/theme.rs` ;
+`rust/otb-gui/tests/app.rs` (`le_tableau_de_bord_montre_une_carte_par_drone_et_ses_fragments`, contre-preuve vue
+en échec) ; captures hors écran du tableau de bord dans les deux thèmes, comparées à la maquette.
 
 ## 2026-11-19 — Navigation de la fenêtre principale
 

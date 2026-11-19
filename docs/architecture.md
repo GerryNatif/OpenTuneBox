@@ -93,9 +93,12 @@ Interface egui + egui_plot (`rust/otb-gui/src/`), D-035.
   `rust/otb-gui/src/tools/common.rs` : briques partagées (dont `ViewMemo`, la vue retenue d'un graphique : « Tout voir » l'oublie,
   et `space_tabs` : les onglets d'un espace, avec `ESPACE_BRUIT` et `VUES_BRUIT` — le nom de l'espace « Bruit et filtres » et ses
   quatre vues, D-058).
-- `dashboard.rs` : le **tableau de bord** (lot 30c), premier écran du rail : une carte par drone connu de la bibliothèque
-  (`otb-store`), avec son firmware, ses logs connus et la date du plus récent ; le panneau de droite liste les logs du drone
-  choisi, du plus récent au plus ancien, et ouvre ceux qui ne le sont pas. Un drone est reconnu par le **nom de machine** de
+- `dashboard.rs` : le **tableau de bord** (lot 30c), premier écran du rail. Une carte par drone connu de la bibliothèque
+  (`otb-store`), **au dessin du prototype** (D-059) : badge teinté de la couleur du drone, nom et sous-titre, pastille d'état,
+  nombre de fragments et date du dernier vol côte à côte, étape du parcours et barre d'avancement ; la carte choisie prend un
+  trait bleu de 2 points et une ombre portée. Les mesures relevées dans la maquette sont des constantes nommées en tête du
+  fichier. Le panneau de droite montre les **fragments** du drone choisi, du plus récent en haut, chacun derrière un rond
+  « + » (ou une coche quand son vol est déjà ouvert). Un drone est reconnu par le **nom de machine** de
   l'en-tête (`Craft name`) tant que la récupération par USB n'apporte pas l'identifiant de la carte (lot 32).
 - `app.rs` : fenêtre principale, écrans Tableau de bord / Guide / Courbes / outil. L'application tient la bibliothèque
   (`App::library`) : **en mémoire** partout sauf au lancement réel, pour qu'aucun banc de test n'écrive celle de l'utilisateur ;

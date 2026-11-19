@@ -16,14 +16,15 @@ fn banc(app: App) -> Harness<'static, App> {
         .build_ui_state(|ui, a: &mut App| a.ui(ui), app)
 }
 
-/// ⚠️ Le tableau de bord montre ce que la **bibliothèque** retient (lot 28), pas seulement les logs ouverts :
-/// une carte par drone, et ses logs dans le panneau de droite.
+/// ⚠️ Le tableau de bord montre ce que la **bibliothèque** retient (lot 28), pas seulement les logs ouverts : une
+/// carte par drone, au dessin de la maquette (badge, pastille d'état, nombre de fragments, dernier vol, barre
+/// d'avancement), et les fragments du drone choisi dans le panneau de droite.
 ///
-/// **Contre-preuve** : en filtrant les logs du panneau sur un autre identifiant de drone, le log attendu
-/// disparaît et l'assertion rougit.
+/// **Contre-preuve** : en filtrant les fragments du panneau sur un autre drone, le fragment attendu disparaît et
+/// l'assertion rougit.
 #[test]
-fn le_tableau_de_bord_montre_une_carte_par_drone_et_ses_logs() {
-    use otb_store::model::{Drone, LogEntry};
+fn le_tableau_de_bord_montre_une_carte_par_drone_et_ses_fragments() {
+    use otb_store::model::{Drone, Fragment, LogEntry};
     let mut app = App::new(otb_gui::tools::all_pages());
     for (id, nom) in [("uid-1", "JeNo Ced"), ("uid-2", "Whoop 65")] {
         let mut d = Drone::new(id, nom);
@@ -33,28 +34,47 @@ fn le_tableau_de_bord_montre_une_carte_par_drone_et_ses_logs() {
     app.library.add_log(LogEntry {
         id: "emp-1".into(),
         drone_id: "uid-1".into(),
-        name: "FINAL".into(),
+        name: "FINAL.bbl".into(),
         path: "/logs/FINAL.bbl".into(),
         copied: false,
         bytes: 2_000_000,
         added: "2026-11-13".into(),
     });
+    app.library.put_fragment(Fragment {
+        id: "emp-1-1".into(),
+        log_id: "emp-1".into(),
+        session: 1,
+        start: 0,
+        end: 5_000,
+        name: "FINAL".into(),
+        role: String::new(),
+        date: "2026-11-13".into(),
+    });
     app.screen = Screen::Dashboard;
     let mut h = banc(app);
     h.run();
-    // « Tableau de bord » paraît deux fois — l'entrée du rail et le titre de la page — donc on vise les cartes
+    // les cartes : le nom, le nombre de fragments, la date du dernier vol, la pastille d'état
     h.get_by_label("JeNo Ced");
     h.get_by_label("Whoop 65");
-    // le panneau d'un drone s'ouvre sur demande et montre ses logs
+    // « Fragments » et « Dernier vol » paraissent sur chaque carte : on compte au lieu de viser
+    assert_eq!(h.query_all_by_label("Dernier vol").count(), 2, "une carte par drone");
+    assert_eq!(h.query_all_by_label("Fragments").count(), 2);
+    h.get_by_label("2026-11-13");
+    assert_eq!(
+        h.query_all_by_label("En cours").count(),
+        1,
+        "seul le drone qui a un fragment est « En cours » ; l'autre est « À préparer »"
+    );
+    h.get_by_label("À préparer");
+    // le panneau du drone s'ouvre en cliquant sa carte, et montre ses fragments
     assert!(
         h.query_by_label("FINAL").is_none(),
-        "les logs ne sont pas montrés d'emblée"
+        "les fragments ne sont pas montrés d'emblée"
     );
-    h.get_all_by_label("Voir ses logs").next().unwrap().click();
+    h.get_by_label("JeNo Ced").click();
     h.run();
     h.get_by_label("FINAL");
-    // la date et la taille du log, telles que le panneau les écrit (la carte, elle, dit « dernier : … »)
-    h.get_by_label("2026-11-13 · 2000 ko");
+    h.get_by_label("1 fragment · plus récent en haut");
 }
 
 /// La bibliothèque retient un log dès son ouverture : c'est ce qui remplit le tableau de bord d'un lancement à
