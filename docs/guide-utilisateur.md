@@ -62,12 +62,16 @@ la fiche de votre drone et les vérifie dans chaque log. En bref :
   laquelle vous utilisez avant de signaler un problème.
 - **Barre du haut** : ouvrir et fermer les logs, la case **Thème sombre** et l'icône qui exporte la fenêtre en
   image. Elle n'agit que sur les logs et sur la fenêtre.
-- **Rail de navigation à gauche** : les boutons **Guide**, **Courbes**, **Analyse spectrale**,
+- **Rail de navigation à gauche** : les boutons **Tableau de bord**, **Guide**, **Courbes**, **Analyse spectrale**,
   **Réponse indicielle**…, chacun avec sa couleur, l'un sous l'autre. Survolez un bouton pour sa description.
   Les pages du Guide désignent les mêmes outils par un nom plus court (« Spectre », « Filtres », « Visualiseur »).
 - **Un clic dans le rail** remplace l'affichage par l'outil choisi, dans la même fenêtre
   (aucune nouvelle fenêtre) ; l'entrée de l'affichage en cours est mise en valeur. **Courbes** ramène aux
   courbes du vol. Un outil garde ses réglages et ses résultats quand on passe à un autre.
+- **Tableau de bord** : une carte par drone que le logiciel a déjà vu, avec son firmware, le nombre de logs connus et
+  la date du plus récent. « Voir ses logs » ouvre la liste de ses vols à droite, et le bouton **+** rouvre un log sans
+  passer par la boîte de fichiers. Le logiciel retient ces drones et ces logs **d'un lancement à l'autre** : un drone
+  est reconnu par le nom de machine inscrit dans ses logs.
 - **Une entrée peut réunir plusieurs vues** : **Bruit et filtres** porte le **Spectre**, **Fréq. × gaz**,
   **Fréq. × temps** et le **Et si** des filtres. Ses onglets, en haut de la page, passent de l'une à l'autre sans
   repasser par le rail. Configuration, elle, s'ouvre depuis le bouton en bas du panneau de droite du visualiseur.

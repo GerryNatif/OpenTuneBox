@@ -2772,6 +2772,7 @@ dependencies = [
  "otb-format",
  "otb-log",
  "otb-parity",
+ "otb-store",
  "rfd",
  "serde",
  "serde_json",

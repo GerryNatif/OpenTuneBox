@@ -16,6 +16,76 @@ fn banc(app: App) -> Harness<'static, App> {
         .build_ui_state(|ui, a: &mut App| a.ui(ui), app)
 }
 
+/// ⚠️ Le tableau de bord montre ce que la **bibliothèque** retient (lot 28), pas seulement les logs ouverts :
+/// une carte par drone, et ses logs dans le panneau de droite.
+///
+/// **Contre-preuve** : en filtrant les logs du panneau sur un autre identifiant de drone, le log attendu
+/// disparaît et l'assertion rougit.
+#[test]
+fn le_tableau_de_bord_montre_une_carte_par_drone_et_ses_logs() {
+    use otb_store::model::{Drone, LogEntry};
+    let mut app = App::new(otb_gui::tools::all_pages());
+    for (id, nom) in [("uid-1", "JeNo Ced"), ("uid-2", "Whoop 65")] {
+        let mut d = Drone::new(id, nom);
+        d.firmware = "Betaflight 4.5.1".into();
+        app.library.put_drone(d);
+    }
+    app.library.add_log(LogEntry {
+        id: "emp-1".into(),
+        drone_id: "uid-1".into(),
+        name: "FINAL".into(),
+        path: "/logs/FINAL.bbl".into(),
+        copied: false,
+        bytes: 2_000_000,
+        added: "2026-11-13".into(),
+    });
+    app.screen = Screen::Dashboard;
+    let mut h = banc(app);
+    h.run();
+    // « Tableau de bord » paraît deux fois — l'entrée du rail et le titre de la page — donc on vise les cartes
+    h.get_by_label("JeNo Ced");
+    h.get_by_label("Whoop 65");
+    // le panneau d'un drone s'ouvre sur demande et montre ses logs
+    assert!(
+        h.query_by_label("FINAL").is_none(),
+        "les logs ne sont pas montrés d'emblée"
+    );
+    h.get_all_by_label("Voir ses logs").next().unwrap().click();
+    h.run();
+    h.get_by_label("FINAL");
+    // la date et la taille du log, telles que le panneau les écrit (la carte, elle, dit « dernier : … »)
+    h.get_by_label("2026-11-13 · 2000 ko");
+}
+
+/// La bibliothèque retient un log dès son ouverture : c'est ce qui remplit le tableau de bord d'un lancement à
+/// l'autre. Le drone est reconnu par le nom de machine de l'en-tête tant que l'USB n'apporte pas mieux.
+#[test]
+fn ouvrir_un_log_le_range_dans_la_bibliotheque() {
+    let mut h = banc(App::new(otb_gui::tools::all_pages()));
+    h.state_mut().open(vec![donnees()]);
+    attendre_logs(&mut h, 1);
+    let lib = &h.state().library;
+    assert_eq!(lib.drones().len(), 1, "un drone, celui du log");
+    assert_eq!(lib.drones()[0].name, "JeNo Ced");
+    assert!(
+        lib.drones()[0].firmware.starts_with("Betaflight"),
+        "{:?}",
+        lib.drones()[0]
+    );
+    assert_eq!(lib.logs().len(), 1);
+    assert_eq!(lib.logs()[0].name, "jeno5_5s.bbl");
+    assert_eq!(lib.logs()[0].drone_id, "JeNo Ced");
+    assert!(!lib.logs()[0].copied, "un log ouvert par l'utilisateur reste où il est");
+    // rouvrir le même fichier ne fait pas un second enregistrement
+    h.state_mut().open(vec![donnees()]);
+    attendre_logs(&mut h, 2);
+    assert_eq!(
+        h.state().library.logs().len(),
+        1,
+        "même empreinte : un seul enregistrement"
+    );
+}
+
 /// ⚠️ D-058 : la navigation est un **rail à gauche**, une entrée par outil ou par espace. Les vues d'un espace
 /// (`HIDDEN`) n'ont pas d'entrée à elles — c'est celle de leur espace qui reste mise en valeur.
 ///

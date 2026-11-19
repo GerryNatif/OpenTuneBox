@@ -10,7 +10,9 @@ use std::time::{Duration, Instant};
 
 use otb_log::flightlog::FlightLog;
 use otb_log::parallel::{MAX_PARALLEL_FILES, load_many};
+use otb_store::Library;
 
+use crate::dashboard::{DashAction, DashboardPage};
 use crate::export::{crop, default_export_path, today_utc, with_png_extension, write_png};
 use crate::guide::ToolTarget;
 use crate::guide_page::{GuideAction, GuidePage};
@@ -57,6 +59,8 @@ pub fn setup(ctx: &egui::Context) {
 /// Écran affiché.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Screen {
+    /// Le tableau de bord : les drones et les logs que la bibliothèque connaît (lot 30c).
+    Dashboard,
     Guide,
     Viewer,
     /// Index dans `App::pages`.
@@ -81,6 +85,7 @@ fn tab_button<'a>(title: &'a str, on: bool, theme: &Theme) -> egui::Button<'a> {
 /// il s'ouvre depuis un autre bouton ; couleur `None` : celle du texte).
 pub fn tab_icon(title: &str) -> Option<(&'static str, Option<&'static str>)> {
     match title {
+        "Tableau de bord" => Some(("layout-dashboard", None)),
         "Courbes" => Some(("activity", None)),
         // l'espace du bruit et des filtres garde l'icône et la couleur de sa première vue (D-058)
         "Bruit et filtres" | "Analyse spectrale" => Some(("audio-waveform", Some("blue"))),
@@ -99,6 +104,10 @@ pub struct App {
     pub screen: Screen,
     pub viewer: ViewerPage,
     pub guide: GuidePage,
+    pub dash: DashboardPage,
+    /// La bibliothèque de données (lot 28). ⚠️ `in_memory` par défaut : comme pour les fiches drone, **aucun banc
+    /// de test n'écrit la vraie bibliothèque de l'utilisateur**. Seul `main.rs` ouvre celle du poste.
+    pub library: Library,
     had_logs: bool,
     pub theme: Theme,
     applied: Option<&'static str>,
@@ -199,6 +208,8 @@ impl App {
             screen: Screen::Guide,
             viewer: ViewerPage::new(),
             guide,
+            dash: DashboardPage::new(),
+            library: Library::in_memory(),
             had_logs: false,
             theme: theme::CLAIR,
             applied: None,
@@ -351,6 +362,7 @@ impl App {
                 return true;
             }
         };
+        self.remember(path, &logs);
         for log in logs {
             if let Some(m) = log.settings.implausible() {
                 self.errors.push(format!("{} : {m}", log.name()));
@@ -367,6 +379,43 @@ impl App {
         true
     }
 
+    /// Range un fichier ouvert dans la bibliothèque : **un enregistrement par fichier** (ses sessions deviendront
+    /// des fragments, lot 29b), et son drone reconnu par le **nom de machine** de l'en-tête. Tant que la
+    /// récupération par USB n'apporte pas l'identifiant de la carte (lot 32), c'est la seule identité disponible :
+    /// un log sans nom de machine n'est donc rangé sous aucun drone, plutôt que sous un drone inventé.
+    ///
+    /// Le fichier est relu pour son empreinte (quelques millisecondes : il vient d'être décodé, donc il est dans
+    /// le cache du système). C'est le prix du refus des doublons quand un même vol est ouvert depuis deux dossiers.
+    fn remember(&mut self, path: &Path, logs: &[FlightLog]) {
+        let Some(first) = logs.first() else { return };
+        let nom = first.settings.craft_name.trim().to_string();
+        if nom.is_empty() {
+            return;
+        }
+        let Ok(bytes) = std::fs::read(path) else { return };
+        let date = crate::dashboard::file_date(path);
+        let mut drone = self
+            .library
+            .drone(&nom)
+            .cloned()
+            .unwrap_or_else(|| otb_store::model::Drone::new(&nom, &nom));
+        drone.firmware = first.settings.firmware.clone();
+        if drone.first_seen.is_empty() {
+            drone.first_seen = date.clone();
+        }
+        drone.last_seen = date.clone();
+        self.library.put_drone(drone);
+        self.library.add_log(otb_store::model::LogEntry {
+            id: otb_store::fingerprint(&bytes),
+            drone_id: nom,
+            name: nom_court(path),
+            path: path.display().to_string(),
+            copied: false,
+            bytes: bytes.len() as u64,
+            added: date,
+        });
+    }
+
     /// Le rail de navigation, à gauche (D-058) : une entrée par outil ou par **espace**. Les vues d'un espace
     /// (`HIDDEN`) n'y ont pas d'entrée à elles — c'est celle de leur espace (`TAB`) qui reste mise en valeur, ce
     /// que faisait déjà la barre du haut pour la Fréquence × gaz et la Configuration.
@@ -381,6 +430,13 @@ impl App {
                 };
                 // chaque entrée prend toute la largeur, son texte aligné à gauche comme dans le prototype
                 ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
+                    let on_dash = self.screen == Screen::Dashboard;
+                    if ui
+                        .add(tab_button("Tableau de bord", on_dash, theme).frame(on_dash))
+                        .clicked()
+                    {
+                        self.screen = Screen::Dashboard;
+                    }
                     let on_guide = self.screen == Screen::Guide;
                     let guide = egui::Button::image_and_text(icon("book-open", 16.0).tint(theme.ui.text), "Guide")
                         .selected(on_guide)
@@ -525,7 +581,11 @@ impl App {
             let (free, window) = (root.available_rect_before_wrap(), ctx.content_rect());
             egui::Rect::from_min_max(egui::pos2(free.min.x, free.min.y), egui::pos2(window.max.x, free.max.y))
         };
+        let mut dash_actions = Vec::new();
         egui::CentralPanel::default().show(root, |ui| match self.screen {
+            Screen::Dashboard => {
+                dash_actions = self.dash.ui(ui, &self.library, &self.state, &theme);
+            }
             Screen::Viewer => {
                 self.viewer.ui(ui, &mut self.state, &theme);
                 goto = self.viewer.take_goto();
@@ -543,6 +603,15 @@ impl App {
             && let Some(j) = self.pages.iter().position(|p| p.title() == title)
         {
             self.screen = Screen::Tool(j);
+        }
+        for a in dash_actions {
+            match a {
+                DashAction::Guide(nom) => {
+                    self.guide.select_by_name(&nom);
+                    self.screen = Screen::Guide;
+                }
+                DashAction::Open(path) => self.open(vec![path]),
+            }
         }
         if let Some(title) = goto {
             self.open_tool(title);
@@ -583,6 +652,11 @@ impl eframe::App for App {
 
     /// Mémoire du Guide entre deux lancements (D-039) : phase, fiche choisie, rôle de chaque log.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
+        // la bibliothèque a ses propres fichiers : une erreur d'écriture se dit dans la barre d'état plutôt que
+        // de passer inaperçue (une bibliothèque en mémoire, elle, n'écrit rien et ne peut pas échouer)
+        if let Err(e) = self.library.save() {
+            self.errors.push(format!("bibliothèque : écriture impossible ({e})"));
+        }
         self.guide.save(storage);
         eframe::set_value(
             storage,

@@ -318,8 +318,24 @@ d'entrée unique — un espace s'y enregistre comme un outil, et chaque vue inte
 
 **Reste** :
 
-- [ ] **Tableau de bord** : cartes de drones, timeline des fragments à droite (le plus récent en haut), « + » pour
-      ajouter un fragment à la liste d'analyse.
+**Fait le 2026-11-19 — 30c, le tableau de bord** (`rust/otb-gui/src/dashboard.rs`) :
+
+- [x] **Cartes de drones** : une par drone que la bibliothèque connaît, avec son firmware, ses logs connus et la
+      date du plus récent ; panneau de droite avec ses logs, du plus récent en haut, et un **+** qui rouvre un log
+      sans passer par la boîte de fichiers.
+- [x] **La bibliothèque entre dans l'interface** : l'application la tient (`App::library`), range chaque fichier
+      ouvert (empreinte du contenu : rouvrir le même fichier ne fait pas deux entrées) et l'écrit quand eframe
+      enregistre. ⚠️ **En mémoire partout sauf au lancement réel**, pour qu'aucun banc n'écrive celle de
+      l'utilisateur — même règle que les fiches drone.
+- [x] **Preuve** : deux tests (cartes et panneau, rangement à l'ouverture) avec **leurs deux contre-preuves vues en
+      échec** ; 281 tests de l'interface verts ; capture du tableau de bord ajoutée à l'exemple `capture`, regardée
+      dans les deux thèmes.
+- [x] **Un défaut attrapé par la capture, pas par les tests** : le caractère « ✓ » n'existe dans aucune police
+      embarquée et fait **paniquer** l'application. Le piège était déjà écrit (L-068) : remplacé par une icône.
+- [ ] **La timeline des fragments** remplacera la liste des logs quand les fragments existeront (lot 29b) : le
+      « + » ajoutera alors un fragment à la liste d'analyse, comme dans le prototype.
+- [ ] **L'avancement du parcours** sur la carte (« Étape 2 / 4 · Filtres ») demande les vérifications du Guide,
+      qui coûtent une analyse par log : à faire avec le lot 30d, pas en ouvrant le tableau de bord.
 **Fait le 2026-11-19 — 30b, l'espace** :
 
 - [x] **Espace « Bruit et filtres »** : une seule entrée de rail pour le Spectre, Fréq. × gaz, Fréq. × temps et le
