@@ -156,7 +156,11 @@ Espace de travail Cargo (D-031), `rust/`. Une entrée par crate. Les fichiers de
   `<données>/OpenTuneBox/OpenTuneBox/bibliotheque/` : drones (clé = identifiant de la carte), logs connus (copiés ou laissés
   en place), fragments de vol, configurations (`diff all` datés, gardés seulement quand ils changent), mesures (une par
   fragment, axe et grandeur, avec l'empreinte des réglages et la **version de calcul** qui les périme) et liste d'analyse.
-  `model.rs` : les tables et leur écriture JSON, conversion à la main et lecture tolérante. **Un seul module d'accès** : le
+  `model.rs` : les tables et leur écriture JSON, conversion à la main et lecture tolérante. `link.rs` : la période d'un
+  fragment dans un log ouvert (`range_of`, en **numéros d'échantillon**), avec un message clair quand le fichier a changé
+  depuis — sans dépendre du décodeur, l'appelant passant `FlightLog::n()`. La liste d'analyse est tenue par la
+  bibliothèque : ordre, **indice** de couleur attribué à l'entrée et jamais changé ensuite (les couleurs restent dans
+  `theme.rs`, L-016), actif ou non, et un fragment de travail qui doit appartenir à la liste. **Un seul module d'accès** : le
   reste du programme ne voit jamais un fichier, ce qui limitera à ce fichier le passage à une vraie base le jour où le
   déclencheur du plan sera atteint. Un fichier illisible ou d'une version plus récente est **mis de côté**, jamais écrasé
   (même règle que les fiches drone, D-039). Mesures de volume dans [validation](validation.md). Dépendance : serde_json.

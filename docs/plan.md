@@ -252,16 +252,25 @@ atterrissage) et la période fait partie de la clé du cache des outils (D-037) 
 série PID) est déjà retenu par la mémoire du Guide (D-039). Le fragment en est la généralisation : plusieurs par
 session, nommés, datés, avec leurs bornes.
 
-- [ ] **Écran d'extraction** (maquette A, hors menu) : ouvert depuis la timeline ou à l'ouverture d'un log,
+**Fait le 2026-11-18 — 29a, le cœur** (`rust/otb-store/src/link.rs`, `rust/otb-store/tests/fragments.rs`) :
+
+- [x] **Index des fragments** : log d'origine, session, bornes en numéros d'échantillon, nom, rôle, date. Le rôle
+      est la chaîne des constantes du Guide, pas un nouveau vocabulaire.
+- [x] **Période d'un fragment dans un log ouvert** (`range_of`) et son **message clair** quand le fichier a changé
+      depuis : c'est le critère d'arrêt du lot, tenu par un test et sa contre-preuve.
+- [x] **Liste d'analyse** : ordre, **indice** de couleur attribué à l'entrée et jamais changé ensuite (un indice
+      libéré est repris), actif ou non, fragment de travail qui doit appartenir à la liste.
+- [x] **Preuve sur un vrai log** : un fragment de `tests/data/jeno5_5s.bbl` relu après redémarrage rend les mêmes
+      bornes **et les mêmes échantillons** ; la contre-preuve d'un décalage d'un seul échantillon est dans le test.
+      26 tests pour `otb-store`, 8 contre-preuves vues en échec au total.
+
+**Reste — 29b, l'écran** :
+
+- [ ] **Écran d'extraction** (maquette A, hors rail) : ouvert depuis la timeline ou à l'ouverture d'un log,
       poignées de début et de fin, et saisie à l'échantillon près dans le panneau.
-- [ ] **Index des fragments** en base : log d'origine, session, bornes, nom, rôle, date. Le rôle vient de la
-      mémoire du Guide : **le reprendre, pas le dupliquer**.
-- [ ] **Liste d'analyse** : ordre, couleur fixe par fragment, actif ou non, fragment de travail. ⚠️ Les couleurs
-      ne s'écrivent que dans `rust/otb-gui/src/theme.rs` (L-016), et les deux thèmes se vérifient.
-- [ ] **Preuve** : un fragment relu après redémarrage rend exactement les mêmes bornes et les mêmes résultats
-      (tests sur `tests/data/jeno5_5s.bbl`, puis sur le corpus) ; contre-preuve sur des bornes décalées d'un
-      échantillon.
-- [ ] **Critère d'arrêt** : un fragment qui ne retrouve pas son log (fichier déplacé) sans message clair.
+- [ ] ⚠️ **À faire avec le lot 30, pas avant** : cet écran est un écran du prototype, et le lot 30 refait toute la
+      navigation. Le construire deux fois serait exactement ce que le plan reproche au couple 23 / 30.
+- [ ] Couleurs par `rust/otb-gui/src/theme.rs` seulement (L-016), les deux thèmes vérifiés, captures hors écran.
 
 ---
 

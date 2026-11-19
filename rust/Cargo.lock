@@ -2807,6 +2807,7 @@ dependencies = [
 name = "otb-store"
 version = "0.10.0"
 dependencies = [
+ "otb-log",
  "serde_json",
 ]
 

@@ -17,6 +17,7 @@
 //! est dans `problems()`. Une version plus récente d'OpenTuneBox a pu écrire des champs que celle-ci ignore :
 //! les perdre sans le dire serait pire que de refuser de lire.
 
+pub mod link;
 pub mod model;
 
 use model::{Analysis, AnalysisItem, Config, Drone, FORMAT_VERSION, Fragment, LogEntry, Measure};
@@ -469,5 +470,82 @@ impl Library {
 
     pub fn set_analysis(&mut self, analysis: Analysis) {
         self.analysis = analysis;
+    }
+
+    /// Ajoute un fragment à la liste d'analyse, actif, avec le **plus petit indice de couleur libre**.
+    ///
+    /// Rend `false` s'il y est déjà : sa couleur ne change donc jamais tant qu'il reste dans la liste, et une
+    /// courbe garde sa couleur d'un écran à l'autre. ⚠️ Un indice, pas une couleur : les couleurs ne s'écrivent
+    /// que dans `rust/otb-gui/src/theme.rs` (L-016).
+    pub fn add_to_analysis(&mut self, fragment_id: &str) -> bool {
+        if self.analysis.items.iter().any(|i| i.fragment_id == fragment_id) {
+            return false;
+        }
+        let used: Vec<u64> = self.analysis.items.iter().map(|i| i.colour).collect();
+        let colour = (0..).find(|c| !used.contains(c)).unwrap_or(0);
+        self.analysis.items.push(AnalysisItem {
+            fragment_id: fragment_id.to_string(),
+            colour,
+            active: true,
+        });
+        true
+    }
+
+    /// Retire un fragment de la liste d'analyse. Son indice de couleur redevient libre, et s'il était le fragment
+    /// de travail celui-ci est oublié — sinon l'interface désignerait un fragment absent de la liste.
+    pub fn remove_from_analysis(&mut self, fragment_id: &str) -> bool {
+        let before = self.analysis.items.len();
+        self.analysis.items.retain(|i| i.fragment_id != fragment_id);
+        if self.analysis.working.as_deref() == Some(fragment_id) {
+            self.analysis.working = None;
+        }
+        before != self.analysis.items.len()
+    }
+
+    /// Déplace un fragment de la liste à la place `to` (son ordre décide de l'ordre des courbes).
+    pub fn move_in_analysis(&mut self, fragment_id: &str, to: usize) -> bool {
+        let Some(from) = self.analysis.items.iter().position(|i| i.fragment_id == fragment_id) else {
+            return false;
+        };
+        let item = self.analysis.items.remove(from);
+        let to = to.min(self.analysis.items.len());
+        self.analysis.items.insert(to, item);
+        true
+    }
+
+    /// Montre ou cache un fragment sans le retirer de la liste : il garde sa place et sa couleur.
+    pub fn set_active(&mut self, fragment_id: &str, active: bool) -> bool {
+        match self.analysis.items.iter_mut().find(|i| i.fragment_id == fragment_id) {
+            Some(i) => {
+                i.active = active;
+                true
+            }
+            None => false,
+        }
+    }
+
+    /// Désigne le fragment de travail. Il doit être dans la liste d'analyse : sinon l'interface afficherait des
+    /// réglages qui ne correspondent à aucune courbe.
+    pub fn set_working(&mut self, fragment_id: Option<&str>) -> bool {
+        match fragment_id {
+            None => {
+                self.analysis.working = None;
+                true
+            }
+            Some(id) if self.analysis.items.iter().any(|i| i.fragment_id == id) => {
+                self.analysis.working = Some(id.to_string());
+                true
+            }
+            Some(_) => false,
+        }
+    }
+
+    /// Les fragments dont le log n'est plus connu de la bibliothèque : à signaler à l'utilisateur plutôt qu'à
+    /// afficher comme s'ils étaient analysables (critère d'arrêt du lot 29).
+    pub fn orphan_fragments(&self) -> Vec<&Fragment> {
+        self.fragments
+            .iter()
+            .filter(|f| self.log(&f.log_id).is_none())
+            .collect()
     }
 }
