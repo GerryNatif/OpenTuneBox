@@ -301,8 +301,23 @@ d'entrée unique — un espace s'y enregistre comme un outil, et chaque vue inte
 (D-037, D-053). Le texte de D-015 cite encore des fichiers Python : l'amendement le remet en termes Rust. D-040
 (écarts voulus avec l'ancienne interface Qt) se relit en même temps.
 
-- [ ] **Écrire l'amendement de D-015** dans [decisions.md](decisions.md) **avant la première ligne de code**, avec
-      les sept entrées du rail et les deux écrans hors rail comme contrat.
+**Fait le 2026-11-19 — 30a, le rail** (`rust/otb-gui/src/app.rs:rail`, `rust/otb-gui/tests/app.rs`) :
+
+- [x] **Amendement de D-015 écrit avant la première ligne de code** : c'est **D-058**, avec les sept entrées du
+      rail et les deux écrans hors rail comme contrat. Il a trouvé que le regroupement **existait déjà** dans le
+      code (les vues `HIDDEN` au `TAB` de leur espace) : la décision met le texte en accord avec le programme.
+- [x] **Le rail** : les boutons de navigation quittent la barre du haut pour une colonne à gauche de 212 points,
+      entrées sans cadre sauf celle qui est affichée. La barre du haut ne garde que ce qui agit sur les logs et
+      sur la fenêtre, et la page exportée commence désormais au bord droit du rail.
+- [x] **Preuve** : deux tests (`le_rail_porte_les_entrees_de_navigation`, `cliquer_une_entree_du_rail_change_decran`)
+      avec contre-preuve vue en échec ; 27 tests de la fenêtre verts ; captures hors écran des deux thèmes
+      regardées, et les quatre images de la documentation refaites (elles montraient une barre qui n'existe plus).
+- [x] **Un défaut révélé, corrigé dans la foulée** : le `ui.horizontal` imbriqué de `phase_button` formait un bloc
+      insécable, et la dernière phase du Guide se faisait **rogner** au lieu de passer à la ligne dès que la
+      fenêtre se resserrait. Mis à plat, elle passe à la ligne (capture à l'appui).
+
+**Reste** :
+
 - [ ] **Tableau de bord** : cartes de drones, timeline des fragments à droite (le plus récent en haut), « + » pour
       ajouter un fragment à la liste d'analyse.
 - [ ] **Espace « Bruit et filtres »** : Gyro / Terme D, les trois vues en onglets, panneau de filtres modifiable

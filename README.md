@@ -18,7 +18,7 @@ part (fréquence d'enregistrement, protocole), et chaque série d'un drone est r
 
 La fenêtre principale est le **visualiseur de log** : gyro, consigne, termes P/I/D/F, moteurs, gaz, debug ;
 période d'analyse (crash exclu automatiquement), mesure de temps et de fréquence entre deux points, lecteur,
-manches, modes de vol. Chaque outil s'affiche par son bouton dans la barre d'outils, dans la même fenêtre (Fréq. × gaz et Fréq. × temps depuis
+manches, modes de vol. Chaque outil s'affiche par son entrée du **rail de navigation**, à gauche, dans la même fenêtre (Fréq. × gaz et Fréq. × temps depuis
 l'outil Spectre, Configuration depuis le panneau de droite du visualiseur).
 
 | Bouton | Ce qu'il montre |

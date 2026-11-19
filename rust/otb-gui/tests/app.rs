@@ -16,6 +16,67 @@ fn banc(app: App) -> Harness<'static, App> {
         .build_ui_state(|ui, a: &mut App| a.ui(ui), app)
 }
 
+/// ⚠️ D-058 : la navigation est un **rail à gauche**, une entrée par outil ou par espace. Les vues d'un espace
+/// (`HIDDEN`) n'ont pas d'entrée à elles — c'est celle de leur espace qui reste mise en valeur.
+///
+/// **Contre-preuve** : en retirant le filtre `!p.hidden()` du rail, « Fréquence × gaz », « Fréquence × temps » et
+/// « Configuration » apparaissent et l'assertion sur les entrées cachées rougit.
+#[test]
+fn le_rail_porte_les_entrees_de_navigation() {
+    let mut h = banc(App::new(otb_gui::tools::all_pages()));
+    h.run();
+    for entree in [
+        "Guide",
+        "Courbes",
+        "Analyse spectrale",
+        "Réponse indicielle",
+        "Curseurs PID",
+        "Simulateur de filtres",
+        "Assistant",
+    ] {
+        assert!(
+            h.query_by_label(entree).is_some(),
+            "entrée « {entree} » absente du rail"
+        );
+    }
+    // les vues d'un espace n'ont pas d'entrée à elles
+    for cachee in ["Fréquence × gaz", "Fréquence × temps", "Configuration"] {
+        assert!(
+            h.query_by_label(cachee).is_none(),
+            "« {cachee} » est une vue d'espace : pas d'entrée de rail"
+        );
+    }
+    // le rail est à gauche, à la largeur du prototype, et la page commence après lui
+    let rail = h.get_by_label("Assistant").rect();
+    assert!(rail.min.x < 20.0, "le rail est collé au bord gauche : {rail:?}");
+    assert!(
+        rail.max.x <= otb_gui::app::RAIL_WIDTH,
+        "une entrée déborde du rail ({} > {})",
+        rail.max.x,
+        otb_gui::app::RAIL_WIDTH
+    );
+}
+
+/// Cliquer une entrée du rail change d'écran, et l'entrée cliquée devient celle qui est mise en valeur.
+#[test]
+fn cliquer_une_entree_du_rail_change_decran() {
+    let mut h = banc(App::new(otb_gui::tools::all_pages()));
+    h.run();
+    assert_eq!(h.state().screen, Screen::Guide, "l'application démarre sur le Guide");
+    h.get_by_label("Courbes").click();
+    h.run();
+    assert_eq!(h.state().screen, Screen::Viewer);
+    h.get_by_label("Assistant").click();
+    h.run();
+    let Screen::Tool(i) = h.state().screen else {
+        panic!("l'Assistant est un outil, écran : {:?}", h.state().screen)
+    };
+    assert_eq!(h.state().pages[i].title(), "Assistant");
+    h.get_by_label("Guide").click();
+    h.run();
+    assert_eq!(h.state().screen, Screen::Guide);
+}
+
 #[test]
 fn le_theme_choisi_survit_a_un_changement_de_theme_du_systeme() {
     let mut app = App::new(Vec::new());
@@ -339,18 +400,33 @@ fn le_bouton_d_un_outil_exporte_seulement_sa_page() {
     h.state_mut().export_status = "etat-connu".into();
     h.run();
     let haut_barre = h.get_by_label("etat-connu").rect().min.y;
+    // la barre du haut n'a plus de bouton de navigation depuis D-058 : on lit sa hauteur réelle
+    let bas_du_haut = h.get_by_label("Ouvrir…").rect().max.y;
     h.get_by_label("Exporter image").click();
     attendre_export(&mut h);
     let img = image::open(dir.join("outil.png"))
         .expect("PNG écrit avec l'extension")
         .to_rgba8();
     let ppp = h.ctx.pixels_per_point();
-    assert_eq!(img.width(), (900.0 * ppp).round() as u32, "toute la largeur");
-    // le dégradé dit d'où vient chaque pixel : rouge = x, vert = y
+    // le dégradé dit d'où vient chaque pixel : rouge = x, vert = y, **en pixels modulo 256** (donc lisible tant que
+    // la page commence avant le 256ᵉ pixel, ce qui est le cas du rail)
     let coin = img.get_pixel(0, 0).0;
-    assert_eq!(coin[0], 0, "le bord gauche de la fenêtre");
-    let haut = coin[1] as f32 / ppp;
-    assert!(haut >= 40.0, "la page commence sous la barre du haut : y = {haut}");
+    // depuis D-058 la page commence au bord droit du rail, pas au bord de la fenêtre
+    let gauche = f32::from(coin[0]) / ppp;
+    assert!(
+        gauche >= otb_gui::app::RAIL_WIDTH,
+        "la page doit commencer après le rail : x = {gauche}"
+    );
+    let largeur = img.width() as f32 / ppp;
+    assert!(
+        (gauche + largeur - 900.0).abs() < 1.0,
+        "la page va du rail au bord droit de la fenêtre : {gauche} + {largeur} ≠ 900"
+    );
+    let haut = f32::from(coin[1]) / ppp;
+    assert!(
+        haut >= bas_du_haut,
+        "la page commence sous la barre du haut : y = {haut}, bas de la barre = {bas_du_haut}"
+    );
     // la page finit juste au-dessus de la barre d'état de la fenêtre (le cadre de la barre est un peu plus haut que son texte)
     let bas = haut + img.height() as f32 / ppp;
     assert!(

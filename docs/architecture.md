@@ -91,7 +91,10 @@ Interface egui + egui_plot (`rust/otb-gui/src/`), D-035.
   | Assistant | `rust/otb-gui/src/tools/advisor.rs` | rapport de l'assistant de réglage ; `rust/otb-gui/src/tools/report_ui.rs` : constats et diagnostic |
 
   `rust/otb-gui/src/tools/common.rs` : briques partagées (dont `ViewMemo`, la vue retenue d'un graphique : « Tout voir » l'oublie).
-- `app.rs` : fenêtre principale, écrans Guide / Courbes / outil, boutons de la barre qui servent d'onglets ; un outil caché ne
+- `app.rs` : fenêtre principale, écrans Guide / Courbes / outil. La navigation est un **rail à gauche** (`rail`, largeur
+  `RAIL_WIDTH`, D-058) : une entrée par outil ou par **espace**, les vues d'un espace (`HIDDEN`) n'en ayant pas à elles —
+  c'est l'entrée nommée par leur `TAB` qui reste mise en valeur. La barre du haut garde ce qui agit sur les logs et sur la
+  fenêtre (ouvrir, fermer, thème, export), et la page exportée commence au bord droit du rail. Un outil caché ne
   recalcule qu'à son affichage. `main.rs` : démarrage (pas de console sous Windows, icône de fenêtre, ouvre les logs passés en
   argument) ; le titre de la fenêtre vient d'`app.rs:window_title` (nom + numéro de version du paquet), tandis que
   l'`app_id` garde le nom seul, qui est celui du fichier `.desktop` (L-076).

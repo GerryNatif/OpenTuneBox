@@ -63,7 +63,10 @@ pub enum Screen {
     Tool(usize),
 }
 
-/// Bouton d'onglet de la barre du haut : icône colorée (si l'onglet en a une) puis le titre.
+/// Largeur du rail de navigation, en points : celle du prototype qui fait foi (D-058).
+pub const RAIL_WIDTH: f32 = 212.0;
+
+/// Bouton d'une entrée de navigation : icône colorée (si l'entrée en a une) puis le titre.
 fn tab_button<'a>(title: &'a str, on: bool, theme: &Theme) -> egui::Button<'a> {
     match tab_icon(title) {
         Some((name, color)) => {
@@ -363,6 +366,41 @@ impl App {
         true
     }
 
+    /// Le rail de navigation, à gauche (D-058) : une entrée par outil ou par **espace**. Les vues d'un espace
+    /// (`HIDDEN`) n'y ont pas d'entrée à elles — c'est celle de leur espace (`TAB`) qui reste mise en valeur, ce
+    /// que faisait déjà la barre du haut pour la Fréquence × gaz et la Configuration.
+    fn rail(&mut self, root: &mut egui::Ui, theme: &Theme) {
+        egui::Panel::left("rail")
+            .default_size(RAIL_WIDTH)
+            .size_range(RAIL_WIDTH..=RAIL_WIDTH)
+            .show(root, |ui| {
+                let shown = match self.screen {
+                    Screen::Tool(j) => self.pages.get(j).map(|p| p.tab()),
+                    _ => None,
+                };
+                // chaque entrée prend toute la largeur, son texte aligné à gauche comme dans le prototype
+                ui.with_layout(egui::Layout::top_down_justified(egui::Align::LEFT), |ui| {
+                    let on_guide = self.screen == Screen::Guide;
+                    let guide = egui::Button::image_and_text(icon("book-open", 16.0).tint(theme.ui.text), "Guide")
+                        .selected(on_guide)
+                        .frame(on_guide);
+                    if ui.add(guide).clicked() {
+                        self.screen = Screen::Guide;
+                    }
+                    let courbes = self.screen == Screen::Viewer || shown == Some("Courbes");
+                    if ui.add(tab_button("Courbes", courbes, theme).frame(courbes)).clicked() {
+                        self.screen = Screen::Viewer;
+                    }
+                    for (i, p) in self.pages.iter().enumerate().filter(|(_, p)| !p.hidden()) {
+                        let on = self.screen == Screen::Tool(i) || shown == Some(p.title());
+                        if ui.add(tab_button(p.title(), on, theme).frame(on)).clicked() {
+                            self.screen = Screen::Tool(i);
+                        }
+                    }
+                });
+            });
+    }
+
     pub fn ui(&mut self, root: &mut egui::Ui) {
         let ctx = root.ctx().clone();
         if self.applied != Some(self.theme.name) {
@@ -446,27 +484,6 @@ impl App {
                     self.state.clear();
                 }
                 ui.separator();
-                let guide = egui::Button::image_and_text(icon("book-open", 16.0).tint(theme.ui.text), "Guide");
-                if ui.add(guide.selected(self.screen == Screen::Guide)).clicked() {
-                    self.screen = Screen::Guide;
-                }
-                // le bouton d'un outil reste mis en valeur quand on est sur un outil qui s'ouvre depuis lui
-                // (« Courbes » aussi : la Configuration s'ouvre depuis le visualiseur)
-                let shown = match self.screen {
-                    Screen::Tool(j) => self.pages.get(j).map(|p| p.tab()),
-                    _ => None,
-                };
-                let courbes = self.screen == Screen::Viewer || shown == Some("Courbes");
-                if ui.add(tab_button("Courbes", courbes, &theme)).clicked() {
-                    self.screen = Screen::Viewer;
-                }
-                for (i, p) in self.pages.iter().enumerate().filter(|(_, p)| !p.hidden()) {
-                    let on = self.screen == Screen::Tool(i) || shown == Some(p.title());
-                    if ui.add(tab_button(p.title(), on, &theme)).clicked() {
-                        self.screen = Screen::Tool(i);
-                    }
-                }
-                ui.separator();
                 let mut dark = theme.dark;
                 if ui.checkbox(&mut dark, "Thème sombre").changed() {
                     self.theme = if dark { theme::SOMBRE } else { theme::CLAIR };
@@ -486,6 +503,7 @@ impl App {
                 }
             });
         });
+        self.rail(root, &theme);
         egui::Panel::bottom("etat").show(root, |ui| {
             let busy = if self.opening.busy() || !self.queue.is_empty() {
                 "Ouverture en cours…"
@@ -499,12 +517,10 @@ impl App {
         let mut guide_actions = Vec::new();
         // la page d'un outil : sous la barre du haut, au-dessus de la barre d'état, sur toute la largeur de la fenêtre
         // (dans eframe le `Ui` racine couvre déjà la fenêtre ; le banc de test d'egui_kittest l'entoure d'une marge de 8 points)
+        // la page va du bord droit du rail au bord droit de la fenêtre (D-058 : le rail n'est pas la page)
         let page_rect = {
             let (free, window) = (root.available_rect_before_wrap(), ctx.content_rect());
-            egui::Rect::from_min_max(
-                egui::pos2(window.min.x, free.min.y),
-                egui::pos2(window.max.x, free.max.y),
-            )
+            egui::Rect::from_min_max(egui::pos2(free.min.x, free.min.y), egui::pos2(window.max.x, free.max.y))
         };
         egui::CentralPanel::default().show(root, |ui| match self.screen {
             Screen::Viewer => {

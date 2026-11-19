@@ -60,12 +60,13 @@ la fiche de votre drone et les vérifie dans chaque log. En bref :
 
 - **Titre de la fenêtre** : le nom du programme suivi de sa **version** (« OpenTuneBox 0.9.0 ») — utile pour savoir
   laquelle vous utilisez avant de signaler un problème.
-- **Barre d'outils** en haut : ouvrir et fermer les logs, puis les boutons **Guide**, **Courbes**,
-  **Analyse spectrale**, **Réponse indicielle**…, chacun avec sa couleur ; la case **Thème sombre** et l'icône
-  qui exporte la fenêtre en image sont tout à droite. Survolez un bouton pour sa description.
+- **Barre du haut** : ouvrir et fermer les logs, la case **Thème sombre** et l'icône qui exporte la fenêtre en
+  image. Elle n'agit que sur les logs et sur la fenêtre.
+- **Rail de navigation à gauche** : les boutons **Guide**, **Courbes**, **Analyse spectrale**,
+  **Réponse indicielle**…, chacun avec sa couleur, l'un sous l'autre. Survolez un bouton pour sa description.
   Les pages du Guide désignent les mêmes outils par un nom plus court (« Spectre », « Filtres », « Visualiseur »).
-- **Les boutons servent d'onglets** : un clic remplace l'affichage par l'outil choisi, dans la même fenêtre
-  (aucune nouvelle fenêtre) ; le bouton de l'affichage en cours est mis en valeur. **Courbes** ramène aux
+- **Un clic dans le rail** remplace l'affichage par l'outil choisi, dans la même fenêtre
+  (aucune nouvelle fenêtre) ; l'entrée de l'affichage en cours est mise en valeur. **Courbes** ramène aux
   courbes du vol. Un outil garde ses réglages et ses résultats quand on passe à un autre. Fréq. × gaz et
   Fréq. × temps s'ouvrent depuis l'outil Spectre ; Configuration, depuis le bouton en bas du panneau de
   droite du visualiseur.
@@ -90,7 +91,7 @@ la fiche de votre drone et les vérifie dans chaque log. En bref :
 
 ## 5. Les outils
 
-Chaque outil s'affiche par son bouton dans la barre d'outils. Le titre ci-dessous est celui du bouton ;
+Chaque outil s'affiche par son entrée du rail, à gauche. Le titre ci-dessous est celui de l'entrée ;
 entre parenthèses, le nom plus court que les pages du Guide emploient pour le même outil.
 
 **Les boutons communs à tous les outils**, en haut de chaque page :
