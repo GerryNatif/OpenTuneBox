@@ -67,9 +67,10 @@ la fiche de votre drone et les vérifie dans chaque log. En bref :
   Les pages du Guide désignent les mêmes outils par un nom plus court (« Spectre », « Filtres », « Visualiseur »).
 - **Un clic dans le rail** remplace l'affichage par l'outil choisi, dans la même fenêtre
   (aucune nouvelle fenêtre) ; l'entrée de l'affichage en cours est mise en valeur. **Courbes** ramène aux
-  courbes du vol. Un outil garde ses réglages et ses résultats quand on passe à un autre. Fréq. × gaz et
-  Fréq. × temps s'ouvrent depuis l'outil Spectre ; Configuration, depuis le bouton en bas du panneau de
-  droite du visualiseur.
+  courbes du vol. Un outil garde ses réglages et ses résultats quand on passe à un autre.
+- **Une entrée peut réunir plusieurs vues** : **Bruit et filtres** porte le **Spectre**, **Fréq. × gaz**,
+  **Fréq. × temps** et le **Et si** des filtres. Ses onglets, en haut de la page, passent de l'une à l'autre sans
+  repasser par le rail. Configuration, elle, s'ouvre depuis le bouton en bas du panneau de droite du visualiseur.
 - **Traces** à gauche, rangées par groupe (Gyro, Consigne et PID, Autres, Moteurs). Les traces que le log
   ne contient pas sont masquées.
 - **Période d'analyse** : la zone claire, affichée sur les graphiques roll, pitch, yaw et moteurs (le reste

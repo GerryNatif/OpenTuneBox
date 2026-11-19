@@ -28,10 +28,9 @@ fn le_rail_porte_les_entrees_de_navigation() {
     for entree in [
         "Guide",
         "Courbes",
-        "Analyse spectrale",
+        "Bruit et filtres",
         "Réponse indicielle",
         "Curseurs PID",
-        "Simulateur de filtres",
         "Assistant",
     ] {
         assert!(
@@ -39,8 +38,14 @@ fn le_rail_porte_les_entrees_de_navigation() {
             "entrée « {entree} » absente du rail"
         );
     }
-    // les vues d'un espace n'ont pas d'entrée à elles
-    for cachee in ["Fréquence × gaz", "Fréquence × temps", "Configuration"] {
+    // les vues d'un espace n'ont pas d'entrée à elles : « Bruit et filtres » en réunit quatre (D-058)
+    for cachee in [
+        "Analyse spectrale",
+        "Fréquence × gaz",
+        "Fréquence × temps",
+        "Simulateur de filtres",
+        "Configuration",
+    ] {
         assert!(
             h.query_by_label(cachee).is_none(),
             "« {cachee} » est une vue d'espace : pas d'entrée de rail"
@@ -55,6 +60,39 @@ fn le_rail_porte_les_entrees_de_navigation() {
         rail.max.x,
         otb_gui::app::RAIL_WIDTH
     );
+}
+
+/// ⚠️ D-058 : les quatre vues de l'espace « Bruit et filtres » s'atteignent les unes depuis les autres par ses
+/// onglets, sans repasser par le rail, et le rail reste allumé sur l'espace.
+///
+/// **Contre-preuve** : en rendant `space_goto` toujours `None` dans `take_goto`, le clic sur « Et si » ne change
+/// plus de vue et l'assertion sur le Simulateur rougit.
+#[test]
+fn les_onglets_de_lespace_mènent_aux_quatre_vues() {
+    let mut h = banc(App::new(otb_gui::tools::all_pages()));
+    h.run();
+    h.get_by_label("Bruit et filtres").click();
+    h.run();
+    let titre = |h: &Harness<'static, App>| match h.state().screen {
+        Screen::Tool(i) => h.state().pages[i].title(),
+        autre => panic!("écran inattendu : {autre:?}"),
+    };
+    assert_eq!(titre(&h), "Analyse spectrale", "l'espace s'ouvre sur sa première vue");
+    for (onglet, attendu) in [
+        ("Et si", "Simulateur de filtres"),
+        ("Fréq. × temps", "Fréquence × temps"),
+        ("Fréq. × gaz", "Fréquence × gaz"),
+        ("Spectre", "Analyse spectrale"),
+    ] {
+        h.get_by_label(onglet).click();
+        h.run();
+        assert_eq!(titre(&h), attendu, "onglet « {onglet} »");
+        // le rail reste allumé sur l'espace, quelle que soit la vue
+        assert!(
+            h.query_by_label("Bruit et filtres").is_some(),
+            "l'entrée de l'espace reste dans le rail"
+        );
+    }
 }
 
 /// Cliquer une entrée du rail change d'écran, et l'entrée cliquée devient celle qui est mise en valeur.

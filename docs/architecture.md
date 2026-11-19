@@ -90,7 +90,9 @@ Interface egui + egui_plot (`rust/otb-gui/src/`), D-035.
   | Configuration (panneau de droite) | `rust/otb-gui/src/tools/setup.rs` | réglages des logs côte à côte (lignes alignées par nom : D-038) |
   | Assistant | `rust/otb-gui/src/tools/advisor.rs` | rapport de l'assistant de réglage ; `rust/otb-gui/src/tools/report_ui.rs` : constats et diagnostic |
 
-  `rust/otb-gui/src/tools/common.rs` : briques partagées (dont `ViewMemo`, la vue retenue d'un graphique : « Tout voir » l'oublie).
+  `rust/otb-gui/src/tools/common.rs` : briques partagées (dont `ViewMemo`, la vue retenue d'un graphique : « Tout voir » l'oublie,
+  et `space_tabs` : les onglets d'un espace, avec `ESPACE_BRUIT` et `VUES_BRUIT` — le nom de l'espace « Bruit et filtres » et ses
+  quatre vues, D-058).
 - `app.rs` : fenêtre principale, écrans Guide / Courbes / outil. La navigation est un **rail à gauche** (`rail`, largeur
   `RAIL_WIDTH`, D-058) : une entrée par outil ou par **espace**, les vues d'un espace (`HIDDEN`) n'en ayant pas à elles —
   c'est l'entrée nommée par leur `TAB` qui reste mise en valeur. La barre du haut garde ce qui agit sur les logs et sur la

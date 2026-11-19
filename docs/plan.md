@@ -320,8 +320,21 @@ d'entrée unique — un espace s'y enregistre comme un outil, et chaque vue inte
 
 - [ ] **Tableau de bord** : cartes de drones, timeline des fragments à droite (le plus récent en haut), « + » pour
       ajouter un fragment à la liste d'analyse.
-- [ ] **Espace « Bruit et filtres »** : Gyro / Terme D, les trois vues en onglets, panneau de filtres modifiable
-      qui remplace le Simulateur. **Faire le lot 23 d'abord** : sinon le même code est déplacé deux fois.
+**Fait le 2026-11-19 — 30b, l'espace** :
+
+- [x] **Espace « Bruit et filtres »** : une seule entrée de rail pour le Spectre, Fréq. × gaz, Fréq. × temps et le
+      « Et si » des filtres, avec ses **onglets en haut de page** (`space_tabs`). Le trait de page gagne la notion
+      d'espace (`SPACE`), et passer d'une vue à l'autre n'exige pas d'avoir un log ouvert, contrairement aux
+      boutons du Guide. Les deux raccourcis du panneau du Spectre disparaissent : deux chemins pour le même geste
+      faisaient deux boutons du même nom sur la page.
+- [x] **Preuve** : `les_onglets_de_lespace_mènent_aux_quatre_vues` avec contre-preuve vue en échec, **280 tests de
+      l'interface verts**, captures des deux thèmes regardées, images de la documentation refaites.
+- [x] La crainte du plan — « faire le lot 23 d'abord, sinon le même code est déplacé deux fois » — **ne s'est pas
+      réalisée** : le regroupement est une affaire de navigation (`tool.rs`, `app.rs`), et n'a pas touché au calcul
+      des filtres. Le lot 23 reste indépendant.
+
+- [ ] **Gyro / Terme D dans l'espace** : le choix du signal, que le prototype montre en tête de l'espace, reste à
+      faire (les vues gardent pour l'instant leurs propres cases).
 - [ ] **Assistant en cartes** triées par gravité, mesure contre seuil en jauge, constats « OK » repliés. ⚠️ Un
       constat se reconnaît par sa clé, jamais par son titre (D-028).
 - [ ] **Preuve** : captures hors écran avant / après sur les deux thèmes, et le temps de cadre mesuré

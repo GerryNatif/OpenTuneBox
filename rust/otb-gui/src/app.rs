@@ -82,7 +82,8 @@ fn tab_button<'a>(title: &'a str, on: bool, theme: &Theme) -> egui::Button<'a> {
 pub fn tab_icon(title: &str) -> Option<(&'static str, Option<&'static str>)> {
     match title {
         "Courbes" => Some(("activity", None)),
-        "Analyse spectrale" => Some(("audio-waveform", Some("blue"))),
+        // l'espace du bruit et des filtres garde l'icône et la couleur de sa première vue (D-058)
+        "Bruit et filtres" | "Analyse spectrale" => Some(("audio-waveform", Some("blue"))),
         "Réponse indicielle" => Some(("chart-line", Some("green"))),
         "Curseurs PID" => Some(("sliders-horizontal", Some("pink"))),
         "Simulateur de filtres" => Some(("funnel", Some("teal"))),
@@ -392,8 +393,9 @@ impl App {
                         self.screen = Screen::Viewer;
                     }
                     for (i, p) in self.pages.iter().enumerate().filter(|(_, p)| !p.hidden()) {
+                        // l'entrée porte le nom de l'espace quand la page en fait partie (D-058)
                         let on = self.screen == Screen::Tool(i) || shown == Some(p.title());
-                        if ui.add(tab_button(p.title(), on, theme).frame(on)).clicked() {
+                        if ui.add(tab_button(p.entry(), on, theme).frame(on)).clicked() {
                             self.screen = Screen::Tool(i);
                         }
                     }
@@ -513,6 +515,7 @@ impl App {
             ui.label(status_line(&self.status, &self.export_status, busy));
         });
         let mut goto = None;
+        let mut space_goto = None;
         let mut export_page = false;
         let mut guide_actions = Vec::new();
         // la page d'un outil : sous la barre du haut, au-dessus de la barre d'état, sur toute la largeur de la fenêtre
@@ -530,10 +533,17 @@ impl App {
             Screen::Tool(i) if i < self.pages.len() => {
                 self.pages[i].ui(ui, &mut self.state, &theme);
                 goto = self.pages[i].take_goto();
+                space_goto = self.pages[i].take_space_goto();
                 export_page = self.pages[i].take_export();
             }
             _ => guide_actions = self.guide.ui(ui, &mut self.state, &theme),
         });
+        // une vue d'espace s'ouvre directement : pas la peine d'avoir un log pour passer du Spectre au « Et si »
+        if let Some(title) = space_goto
+            && let Some(j) = self.pages.iter().position(|p| p.title() == title)
+        {
+            self.screen = Screen::Tool(j);
+        }
         if let Some(title) = goto {
             self.open_tool(title);
         }
