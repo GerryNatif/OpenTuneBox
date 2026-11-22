@@ -60,6 +60,7 @@ Règles d'écriture :
 
 | ID | Sujet | Statut |
 |---|---|---|
+| W-059 | Place des traces (« Courbes ») dans le rail du prototype | ouvert (à trancher par Cédric au lot 30) |
 | W-058 | Simulation temporelle des filtres : une seule cadence et terme D dérivé avant filtrage | ouvert (limite assumée, invisible dans l'application) |
 | W-057 | ArduCopter (logs DataFlash `.bin`) non pris en charge | ouvert (périmètre Betaflight seul, 2026-11-18) |
 | W-026 | Rust / Python : zéros signés de `np.max` / `np.min`, et entrées jamais fournies par l'application (`fs` NaN dans `xcorr`…) | 🚫 SANS SUITE (2026-11-08) — plus de Python à égaler, aucun appelant ; écarts gardés en commentaire du code |
@@ -882,3 +883,19 @@ compositeur. Seul le banc de W-049 est relançable aujourd'hui (`banc_cadre`).
   **Piste** : la description unique du lot 23, dont la simulation temporelle se déduit avec la cadence de chaque
   étape ; l'ordre du terme D vient alors de la position de la dérivation (D-057, `derivation`).
   [`rust/otb-analysis/src/bf_filters.rs:simulate_gyro`]
+
+## Origine : refonte de la navigation, lot 30 (2026-11-19)
+
+- **W-059** — **Le prototype complet de l'application n'a pas d'entrée « Courbes » dans son rail.** Ses sept entrées
+  sont Tableau de bord, Guide, Assistant, Bruit et filtres, Réponse indicielle, Curseurs PID et Configuration ; les
+  traces apparaissent par un bouton « Traces » **dans** un espace. Or le visualiseur
+  (`rust/otb-gui/src/viewer_page.rs`) est aujourd'hui une entrée à part entière, et c'est la page qu'on ouvre en
+  premier avec un log.
+  **Pourquoi reporté** : retirer une entrée de navigation que le pilote utilise tous les jours ne se décide pas en
+  lisant une maquette ; et le lot 30 peut livrer le rail sans trancher ce point (les traces gardent leur entrée en
+  attendant).
+  **Risque si on n'y touche pas** : le rail aura huit entrées là où le prototype en montre sept, donc un écart
+  visible entre la maquette qui fait foi et le programme.
+  **Reprise** : à la première question de Cédric sur le rail, ou quand l'espace « Bruit et filtres » existera (lot
+  30b) — on verra alors si les traces y ont leur place ou s'il leur faut la leur.
+  [`rust/otb-gui/src/viewer_page.rs`]

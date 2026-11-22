@@ -2772,6 +2772,7 @@ dependencies = [
  "otb-format",
  "otb-log",
  "otb-parity",
+ "otb-store",
  "rfd",
  "serde",
  "serde_json",
@@ -2801,6 +2802,14 @@ dependencies = [
  "serde_json",
  "sha2",
  "zip",
+]
+
+[[package]]
+name = "otb-store"
+version = "0.10.0"
+dependencies = [
+ "otb-log",
+ "serde_json",
 ]
 
 [[package]]

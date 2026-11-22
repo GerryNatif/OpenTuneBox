@@ -70,6 +70,8 @@ ici, jamais dans le code.
 
 | ID | Décision | Date |
 |---|---|---|
+| D-059 | **Le dessin de l'interface suit le prototype au détail près** : mesures, couleurs et contenu relevés dans la maquette qui fait foi ; thème clair identique, thème sombre dérivé ; un écart se justifie par écrit | 2026-11-19 |
+| D-058 | Amende D-015 : une entrée de navigation est **un outil ou un espace** qui regroupe plusieurs vues ; les boutons deviennent un **rail à gauche** ; deux écrans hors rail sont permis. Ce qui reste : aucune fenêtre séparée, une vue cachée ne calcule pas | 2026-11-19 |
 | D-057 | Scripts firmware : chaîne décrite en **données**, briques **compilées en Rust** (pas de moteur de script) ; rien du code des firmwares dans le dépôt ; banc de référence qui télécharge et ne garde que des vecteurs ; bascule d'un coup de la chaîne de calcul ; périmètre **Betaflight seul** | 2026-11-18 |
 | D-056 | Notes de version **générées par GitHub** : titre de PR = phrase en français, une étiquette `RN: …` par PR (rubriques de `.github/release.yml`, contrôle `etiquette-pr.yml`) ; `CHANGELOG.md` supprimé ; remplace « titre de PR = nom de la branche » | 2026-11-11 |
 | D-055 | Workflows relus par `actionlint` **dans la CI** (job de `tests.yml`, version figée vérifiée par empreinte), pas installé sur le poste | 2026-11-11 |
@@ -129,6 +131,84 @@ ici, jamais dans le code.
 | D-001 | Python + PySide6 + pyqtgraph, projet privé, interface en français **(amendée par D-035)** | 2026-10-01 |
 
 ---
+
+## 2026-11-19 — Fidélité au prototype
+
+### D-059 : le dessin de l'interface suit le prototype au détail près
+
+Complète D-058, qui ne fixait que la **structure** de la navigation.
+
+**Contexte.** Le 2026-11-19, après la livraison du rail, de l'espace « Bruit et filtres » et du tableau de bord,
+Cédric reprend : « le design du logiciel doit correspondre à 100 % à la maquette ». Les trois lots avaient repris
+la **structure** du prototype (entrées, regroupements, écrans) mais pas son **dessin** : cartes au cadre egui
+ordinaire, pas de pastille d'état, pas de barre d'avancement, entrée de rail au style egui plutôt qu'au fond bleu
+pâle de la maquette.
+
+**Décision.**
+- Le **prototype complet de l'application** (canevas du 2026-11-16) fait foi pour le dessin comme pour la
+  structure : **mesures** (tailles de texte, coins, marges, hauteurs), **couleurs** et **contenu** des écrans s'y
+  relèvent, et le code les porte en constantes nommées, groupées en tête du fichier de l'écran.
+- **Thème clair identique à la maquette** ; la maquette n'existe qu'en clair, donc le **thème sombre garde ses
+  formes et ses mesures** et prend les couleurs sombres de `rust/otb-gui/src/theme.rs`. ⚠️ Toute couleur passe par
+  le thème, jamais en dur (L-016) : la palette de la maquette s'y trouvait déjà presque entière — le bleu
+  `highlight` `#1f57c3`, `muted` `#5c5c5c`, `mid` `#c4c4c4`, `hover` `#e4e7ec`, les accents vert et orange — et
+  seuls `select` (`#e8eefa`, fond d'une entrée choisie) et `border` (`#e1e3e8`) ont été ajoutés.
+- **Un écart au dessin se justifie par écrit**, dans le code et dans le plan, sinon il se corrige.
+- Trois écarts sont ainsi assumés, tranchés par Cédric le même jour : le **thème sombre** est dérivé ; chaque
+  **session ouverte devient un fragment** couvrant le vol entier (sinon le compteur « Fragments » de la carte
+  afficherait 0 partout jusqu'au lot 29b) ; et l'**avancement** d'une carte ne compte que les cases cochées à la
+  main, les cases vérifiées par un log demandant une analyse par log.
+- Option écartée : « assez proche ». Une maquette qui fait foi ne se respecte pas à moitié — c'est elle qui tient
+  l'unité de l'interface quand les écrans s'ajoutent un par un.
+
+**Témoins.** `rust/otb-gui/src/dashboard.rs` (mesures de la maquette en constantes nommées en tête de fichier) et
+`rust/otb-gui/src/app.rs:rail_entry` ; les deux couleurs ajoutées dans `rust/otb-gui/src/theme.rs` ;
+`rust/otb-gui/tests/app.rs` (`le_tableau_de_bord_montre_une_carte_par_drone_et_ses_fragments`, contre-preuve vue
+en échec) ; captures hors écran du tableau de bord dans les deux thèmes, comparées à la maquette.
+
+## 2026-11-19 — Navigation de la fenêtre principale
+
+### D-058 : une entrée de navigation est un outil ou un espace ; la barre devient un rail à gauche
+
+Amende D-015 (« un outil = un onglet de la fenêtre principale ») : ce qui comptait y reste en vigueur, seule la
+forme change.
+
+**Contexte.** Le canevas de maquettes du 2026-11-16 (document de travail de Cédric, hors dépôt) propose un **rail de
+navigation à gauche** de sept entrées — Tableau de bord, Guide, Assistant, Bruit et filtres, Réponse indicielle,
+Curseurs PID, Configuration — et deux écrans **hors rail** : l'extraction d'un fragment et la fiche d'un drone.
+L'entrée « Bruit et filtres » réunit quatre outils d'aujourd'hui : l'Analyse spectrale, la Fréquence × gaz, la
+Fréquence × temps et le Simulateur de filtres. Le 2026-11-18, Cédric a désigné le **prototype complet de
+l'application** comme la maquette qui fait foi et a demandé de trancher le sort de D-015.
+
+**Ce que le code fait déjà.** Le regroupement n'est pas une nouveauté : `rust/otb-gui/src/tools/freq_throttle.rs` et
+`rust/otb-gui/src/tools/freq_time.rs` sont des pages **cachées** (`HIDDEN`) dont le bouton mis en valeur est celui de
+l'Analyse spectrale (`TAB`), et `rust/otb-gui/src/tools/setup.rs` est cachée sous « Courbes ». La lettre de D-015 —
+une entrée par outil — était donc déjà contournée par le mécanisme même du trait de page. Cette décision la met en
+accord avec le code et avec les maquettes.
+
+**Décision.**
+- **Ce qui ne change pas, et qui était l'objet de D-015** : tout s'affiche dans la **fenêtre principale**, jamais
+  dans une fenêtre séparée ; et **une vue cachée ne calcule pas**. Cette seconde règle compte désormais davantage :
+  un espace n'affiche qu'une vue sur quatre, donc trois calculs sur quatre ne partent pas.
+- Une **entrée de navigation** est soit un outil, soit un **espace** qui regroupe plusieurs vues d'un même sujet.
+  Le mécanisme reste celui du trait de page (`rust/otb-gui/src/tool.rs`) : une vue d'espace est une page `HIDDEN`
+  dont `TAB` nomme l'entrée. `rust/otb-gui/src/tools/mod.rs:all_pages` reste **le seul endroit** où une page
+  s'enregistre.
+- Les boutons de navigation passent de la barre du haut à un **rail vertical à gauche**. La barre du haut garde ce
+  qui agit sur les logs et sur la fenêtre : ouvrir, fermer, thème, export.
+- **Deux écrans hors rail** sont permis, ouverts par un geste puis refermés : l'extraction d'un fragment et la
+  fiche d'un drone. Hors rail ne veut pas dire hors fenêtre : D-015 tient.
+- Option écartée : garder une entrée par outil et retoucher les maquettes. Le prototype fait foi (arbitrage du
+  2026-11-18), et neuf entrées de rail pour sept sujets n'aident personne.
+
+**Témoins.** Rail et entrées : `rust/otb-gui/tests/app.rs` (`le_rail_porte_les_entrees_de_navigation`,
+`cliquer_une_entree_du_rail_change_decran`) ; le contrat des icônes reste tenu par
+`rust/otb-gui/tests/contracts.rs` (`chaque_onglet_de_la_barre_a_son_icone_et_sa_couleur_comme_python`) ; captures
+hors écran dans les deux thèmes, regardées avant et après. Le regroupement déjà en place est lisible dans les
+constantes `HIDDEN` et `TAB` des trois pages citées plus haut.
+
+**Ouvert.** W-059 : le prototype n'a **pas** d'entrée « Courbes » dans son rail, alors que le visualiseur est la page
+la plus utilisée aujourd'hui ; où vont les traces reste à trancher.
 
 ## 2026-11-18 — Scripts firmware
 
