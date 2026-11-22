@@ -70,6 +70,7 @@ ici, jamais dans le code.
 
 | ID | Décision | Date |
 |---|---|---|
+| D-057 | Scripts firmware : chaîne décrite en **données**, briques **compilées en Rust** (pas de moteur de script) ; rien du code des firmwares dans le dépôt ; banc de référence qui télécharge et ne garde que des vecteurs ; bascule d'un coup de la chaîne de calcul ; périmètre **Betaflight seul** | 2026-11-18 |
 | D-056 | Notes de version **générées par GitHub** : titre de PR = phrase en français, une étiquette `RN: …` par PR (rubriques de `.github/release.yml`, contrôle `etiquette-pr.yml`) ; `CHANGELOG.md` supprimé ; remplace « titre de PR = nom de la branche » | 2026-11-11 |
 | D-055 | Workflows relus par `actionlint` **dans la CI** (job de `tests.yml`, version figée vérifiée par empreinte), pas installé sur le poste | 2026-11-11 |
 | D-054 | Sécurité : réglages GitHub (protections, secrets, versions immuables, CodeQL, actions autorisées), Claude refusé sur une demande de fusion venue d'un fork, `--locked` en CI, aucun `unsafe`, crochet `guard-git.sh`, essai de mutations | 2026-11-11 |
@@ -128,6 +129,64 @@ ici, jamais dans le code.
 | D-001 | Python + PySide6 + pyqtgraph, projet privé, interface en français **(amendée par D-035)** | 2026-10-01 |
 
 ---
+
+## 2026-11-18 — Scripts firmware
+
+### D-057 : un script par firmware et par plage de versions — chaîne décrite en données, briques compilées en Rust
+
+**Contexte.** L'étude du 2026-11-17 (document de travail de Cédric, hors dépôt) propose d'étendre OpenTuneBox à
+INAV et à ArduCopter au moyen d'un « script » par firmware et par version : le script décrit la chaîne de filtres
+et de PID, et fournit les briques de calcul avec l'arithmétique exacte de sa famille ; le cœur assemble et exécute.
+Elle laisse sept questions ouvertes. Trois avaient déjà leur réponse dans les registres (la licence, D-045 ; le
+hors ligne, D-003 ; l'ordre de travail, Betaflight étant le seul firmware du corpus) ; Cédric a tranché les quatre
+autres le 2026-11-18, une par une.
+
+**Décision.**
+- **Forme d'un script.** La chaîne est décrite dans un **fichier de données versionné** du dépôt : étapes
+  ordonnées (brique, cadence, paramètres, en service ou non), **prises** des signaux enregistrés par le log, et
+  position de la **dérivation** du terme D. Les **briques de calcul sont du Rust compilé** dans le programme,
+  rangées par famille de firmware. **Pas** de moteur de script embarqué (Rhai, Lua) ni de WASM : ils n'achètent
+  qu'un rechargement à chaud, au prix de la vitesse sur des millions d'échantillons, d'une surface de chargement de
+  code exécutable (D-054) et d'une dépendance de plus. Conséquence assumée : **ajouter un firmware demande de
+  recompiler et de publier une version.**
+- **Rien du code des firmwares n'entre dans le dépôt.** Les briques sont réimplémentées d'après la lecture du code
+  (D-004), jamais copiées. Betaflight, INAV et ArduPilot sont sous GPL 3, que D-045 refuse : aucun fichier de
+  firmware versionné, et rien de compilé depuis leur code dans ce qui est livré. L'option de l'étude « compiler
+  directement le code du firmware » (en WASM) est **écartée pour cette raison**, pas pour une raison technique.
+- **Banc de référence dans le dépôt.** Un script **écrit par le projet** télécharge le firmware au moment de
+  s'exécuter, le compile sur le poste, et ne verse dans le dépôt que des **vecteurs de nombres**. La preuve reste
+  refaisable par quiconque, la CI comprise, sans redistribuer de code sous GPL. Option écartée : un banc hors
+  dépôt — les vecteurs seraient là sans que personne puisse les refaire.
+- **Bascule d'un coup, pas de cohabitation.** La chaîne float32 à l'arithmétique du firmware **remplace** la chaîne
+  `f64` actuelle dans un seul lot, qui réenregistre les références figées (W-028) et revérifie les seuils de
+  l'assistant (D-011). Option écartée : garder les deux chaînes le temps de prouver la nouvelle. Le risque — un
+  seuil qui change l'**avis** de l'assistant sur un vrai log — est **accepté par Cédric** et borné par l'ordre des
+  étapes du lot 24 de [plan.md](plan.md) : l'écart est chiffré sur tout le corpus **avant** que l'interface ne
+  change, et un avis qui bascule arrête le lot.
+- **Périmètre : Betaflight seul.** W-001 reste fermé (INAV, logs KISS) et ArduCopter est consigné en W-057. Raison :
+  le corpus ne contient aucun log de ces firmwares, et le projet valide sur de vrais logs en plus des tests
+  synthétiques. Reprise : des logs réels, à la demande de Cédric.
+- **Trois niveaux de fidélité, jamais confondus** dans les textes affichés : *même algorithme* (même ordre, mêmes
+  formules de coefficients, mêmes approximations) est l'engagement du logiciel ; *bit à bit contre le firmware
+  compilé sur PC* est le critère de test de chaque script ; *identité au vol réel* est **mesurée et affichée,
+  jamais promise**, car le log ne contient pas toujours l'entrée des filtres à pleine cadence.
+
+**Témoins.** État du code lu le 2026-11-18, **puis corrigé le même jour** après vérification du chemin que
+l'application emprunte réellement. `rust/otb-analysis/src/bf_filters.rs` est entièrement en `f64` (port de Python,
+tolérance mesurée, L-048). L'ordre de la chaîne y existe **deux fois** :
+`rust/otb-analysis/src/bf_filters.rs:gyro_chain` le porte avec ses **deux cadences** (LPF2 à la cadence gyro, le
+reste à la cadence PID, [spec-betaflight.md](spec-betaflight.md) §3) et c'est **celui que l'application utilise**,
+par `rust/otb-analysis/src/bf_filters.rs:whatif_spectrum` ;
+`rust/otb-analysis/src/bf_filters.rs:simulate_gyro` le porte une seconde fois, **en dur et à la seule cadence du
+log**, et n'est appelé que par les tests et par `otb-parity`. Même chose pour le terme D :
+`rust/otb-analysis/src/bf_filters.rs:simulate_dterm` dérive puis filtre quand le firmware filtre puis dérive, mais
+l'application passe par un **rapport de réponses**, où l'ordre des filtres ne change rien. C'est donc une
+**duplication, pas un défaut visible** (W-058) : ce que le lot 23 doit supprimer, c'est la seconde description.
+Refus du copyleft : liste `allow` de `rust/deny.toml`, onze licences, aucune copyleft. **Non vérifié à la source** : la
+licence GPL 3 des trois firmwares est lue dans l'étude, pas dans leurs dépôts ; à confirmer au lot qui monte le
+banc (lot 24).
+
+**Ouvert.** W-001 (INAV, KISS), W-057 (ArduCopter).
 
 ## 2026-11-11 — Notes de version
 
